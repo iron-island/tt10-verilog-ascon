@@ -10,7 +10,7 @@ See below to get started or for more information, check the [website](https://ti
 
 ## How to run
 
-To run the RTL simulation:
+To run the RTL simulation (by default waveform dump is disabled, add `WAVES=1` to enable waveform dump):
 
 ```sh
 make -B
