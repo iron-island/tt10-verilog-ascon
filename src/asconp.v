@@ -6,7 +6,9 @@ module asconp(
     output reg [63:0] S_1_reg,
     output reg [63:0] S_2_reg,
     output reg [63:0] S_3_reg,
-    output reg [63:0] S_4_reg
+    output reg [63:0] S_4_reg,
+
+    output reg rounds_done
 );
 
     parameter NUM_ROUNDS = 12;
@@ -22,15 +24,16 @@ module asconp(
     reg       state_initialized;
     reg [3:0] round_ctr;
 
+    assign rounds_done = (round_ctr == NUM_ROUNDS);
+
     always@(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            round_ctr <= 4'd0;
-
             state_initialized <= 1'b0;
+            round_ctr   <= 4'd0;
         end else if (!state_initialized) begin
             state_initialized <= 1'b1;
         end else if (round_ctr < NUM_ROUNDS) begin
-            round_ctr <= round_ctr + 1'b1;
+            round_ctr   <= round_ctr + 1'b1;
         end
     end
 

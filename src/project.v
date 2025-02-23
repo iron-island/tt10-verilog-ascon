@@ -5,7 +5,26 @@
 
 `default_nettype none
 
+// Output states
+`define OUT_DOUBLE_BYTES_00 5'd00
+`define OUT_DOUBLE_BYTES_01 5'd01
+`define OUT_DOUBLE_BYTES_02 5'd02
+`define OUT_DOUBLE_BYTES_03 5'd03
+`define OUT_DOUBLE_BYTES_04 5'd04
+`define OUT_DOUBLE_BYTES_05 5'd05
+`define OUT_DOUBLE_BYTES_06 5'd06
+`define OUT_DOUBLE_BYTES_07 5'd07
+`define OUT_DOUBLE_BYTES_08 5'd08
+`define OUT_DOUBLE_BYTES_09 5'd09
+`define OUT_DOUBLE_BYTES_10 5'd10
+`define OUT_DOUBLE_BYTES_11 5'd11
+`define OUT_DOUBLE_BYTES_12 5'd12
+`define OUT_DOUBLE_BYTES_13 5'd13
+`define OUT_DOUBLE_BYTES_14 5'd14
+`define OUT_DOUBLE_BYTES_15 5'd15
+
 // TODO: Put inside .f file instead
+`include "./state_controller.v"
 `include "./asconp.v"
 
 module tt_um_ascon_ironisland_top (
@@ -18,21 +37,44 @@ module tt_um_ascon_ironisland_top (
     input  wire       clk,      // clock
     input  wire       rst_n     // reset_n - low to reset
 );
-
-    // All output pins must be assigned. If not used, assign to 0.
-    assign uo_out  = ui_in + uio_in;  // Example: ou_out is the sum of ui_in and uio_in
-    assign uio_out = 0;
-    assign uio_oe  = 0;
-
-    // List all unused inputs to prevent warnings
-    wire _unused = &{ena, clk, rst_n, 1'b0};
-
     // State registers
     wire [63:0] S_0_reg;
     wire [63:0] S_1_reg;
     wire [63:0] S_2_reg;
     wire [63:0] S_3_reg;
     wire [63:0] S_4_reg;
+
+    // Control signals
+    wire rounds_done;
+    wire output_enable;
+
+    // I/O drivers
+    wire [15:0] double_byte_output;
+
+    // All output pins must be assigned. If not used, assign to 0.
+    assign uo_out  = double_byte_output[ 7:0];
+    assign uio_out = double_byte_output[15:8];
+    assign uio_oe  = {8{output_enable}};
+
+    // List all unused inputs to prevent warnings
+    wire _unused = &{ena, ui_in[7:0], uio_in[7:0]};
+
+    // Instantiate state controller
+    state_controller u_ctrl(
+        .clk      (clk),
+        .rst_n    (rst_n),
+
+        .S_0_reg  (S_0_reg),
+        .S_1_reg  (S_1_reg),
+        .S_2_reg  (S_2_reg),
+        .S_3_reg  (S_3_reg),
+        .S_4_reg  (S_4_reg),
+
+        .rounds_done(rounds_done),
+
+        .output_enable(output_enable),
+        .double_byte_output(double_byte_output)
+    );
 
     // Instantiate permutations
     asconp #(
@@ -45,7 +87,9 @@ module tt_um_ascon_ironisland_top (
         .S_1_reg  (S_1_reg),
         .S_2_reg  (S_2_reg),
         .S_3_reg  (S_3_reg),
-        .S_4_reg  (S_4_reg)
+        .S_4_reg  (S_4_reg),
+
+        .rounds_done(rounds_done)
     );
 
 endmodule
