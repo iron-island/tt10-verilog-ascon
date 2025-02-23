@@ -2,11 +2,11 @@ module asconp(
     input wire clk,
     input wire rst_n,
 
-    output reg [63:0] S_0_reg,
-    output reg [63:0] S_1_reg,
-    output reg [63:0] S_2_reg,
-    output reg [63:0] S_3_reg,
-    output reg [63:0] S_4_reg,
+    output reg [47:0] S_0_reg,
+    output reg [47:0] S_1_reg,
+    output reg [47:0] S_2_reg,
+    output reg [47:0] S_3_reg,
+    output reg [47:0] S_4_reg,
 
     output reg rounds_done
 );
@@ -15,11 +15,11 @@ module asconp(
 
     // State registers
 
-    reg [63:0] S_0_L;
-    reg [63:0] S_1_L;
-    reg [63:0] S_2_L;
-    reg [63:0] S_3_L;
-    reg [63:0] S_4_L;
+    reg [47:0] S_0_L;
+    reg [47:0] S_1_L;
+    reg [47:0] S_2_L;
+    reg [47:0] S_3_L;
+    reg [47:0] S_4_L;
 
     reg       state_initialized;
     reg [3:0] round_ctr;
@@ -39,11 +39,11 @@ module asconp(
 
     always@(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            S_0_reg <= 64'd0;
-            S_1_reg <= 64'd0;
-            S_2_reg <= 64'd0;
-            S_3_reg <= 64'd0;
-            S_4_reg <= 64'd0;
+            S_0_reg <= 48'd0;
+            S_1_reg <= 48'd0;
+            S_2_reg <= 48'd0;
+            S_3_reg <= 48'd0;
+            S_4_reg <= 48'd0;
         end else if (!state_initialized) begin
             // TODO: Replace with actual initialization via state machine
             //       For now, using random initial states from one run of
@@ -53,11 +53,12 @@ module asconp(
             //x2=1120821ab7ef5039
             //x3=0288f6cd3f44a4c2
             //x4=122103181031374d
-            S_0_reg <= 64'h00001000808c0001;
-            S_1_reg <= 64'hf23494a4b1f09f72;
-            S_2_reg <= 64'h1120821ab7ef5039;
-            S_3_reg <= 64'h0288f6cd3f44a4c2;
-            S_4_reg <= 64'h122103181031374d;
+            // TODO: Return back to 64 bits
+            S_0_reg <= 48'h1000808c0001;
+            S_1_reg <= 48'h94a4b1f09f72;
+            S_2_reg <= 48'h821ab7ef5039;
+            S_3_reg <= 48'hf6cd3f44a4c2;
+            S_4_reg <= 48'h03181031374d;
         end else if (round_ctr < NUM_ROUNDS) begin
             S_0_reg <= S_0_L;
             S_1_reg <= S_1_L;
@@ -67,19 +68,19 @@ module asconp(
         end
     end
 
-    reg [63:0] S_0_C;
-    reg [63:0] S_1_C;
-    reg [63:0] S_2_C;
-    reg [63:0] S_3_C;
-    reg [63:0] S_4_C;
+    reg [47:0] S_0_C;
+    reg [47:0] S_1_C;
+    reg [47:0] S_2_C;
+    reg [47:0] S_3_C;
+    reg [47:0] S_4_C;
 
     reg [7:0] const_i;
 
-    reg [63:0] S_0_S;
-    reg [63:0] S_1_S;
-    reg [63:0] S_2_S;
-    reg [63:0] S_3_S;
-    reg [63:0] S_4_S;
+    reg [47:0] S_0_S;
+    reg [47:0] S_1_S;
+    reg [47:0] S_2_S;
+    reg [47:0] S_3_S;
+    reg [47:0] S_4_S;
 
     reg [4:0] Sbox_out;
 
@@ -92,7 +93,7 @@ module asconp(
     always@(*) begin
         S_0_C = S_0_reg;
         S_1_C = S_1_reg;
-        S_2_C[63:8] = S_2_reg[63:8];
+        S_2_C[47:8] = S_2_reg[47:8];
         S_3_C = S_3_reg;
         S_4_C = S_4_reg;
 
@@ -123,7 +124,7 @@ module asconp(
 
     // Substitution layer
     always@(*) begin
-        for (int i = 0; i < 64; i = i + 1) begin
+        for (int i = 0; i < 48; i = i + 1) begin
             // SBox LUT
             case ({S_0_C[i], S_1_C[i], S_2_C[i], S_3_C[i], S_4_C[i]})
                 5'h00 : Sbox_out = 5'h04;
@@ -171,11 +172,13 @@ module asconp(
     // Linear diffusion layer
     always@(*) begin
         // Linear functions
-        S_0_L = S_0_S ^ ({S_0_S[18:0], S_0_S[63:19]}) ^ ({S_0_S[27:0], S_0_S[63:28]});
-        S_1_L = S_1_S ^ ({S_1_S[60:0], S_1_S[63:61]}) ^ ({S_1_S[38:0], S_1_S[63:39]});
-        S_2_L = S_2_S ^ ({S_2_S[   0], S_2_S[63:01]}) ^ ({S_2_S[ 5:0], S_2_S[63:06]});
-        S_3_L = S_3_S ^ ({S_3_S[ 9:0], S_3_S[63:10]}) ^ ({S_3_S[16:0], S_3_S[63:17]});
-        S_4_L = S_4_S ^ ({S_4_S[ 6:0], S_4_S[63:07]}) ^ ({S_4_S[40:0], S_4_S[63:41]});
+        S_0_L = S_0_S ^ ({S_0_S[18:0], S_0_S[47:19]}) ^ ({S_0_S[27:0], S_0_S[47:28]});
+        // TODO: Return back when extended back to 64 bits
+        //S_1_L = S_1_S ^ ({S_1_S[60:0], S_1_S[47:61]}) ^ ({S_1_S[38:0], S_1_S[47:39]});
+        S_1_L = S_1_S ^ ({S_1_S[44:0], S_1_S[47:45]}) ^ ({S_1_S[38:0], S_1_S[47:39]});
+        S_2_L = S_2_S ^ ({S_2_S[   0], S_2_S[47:01]}) ^ ({S_2_S[ 5:0], S_2_S[47:06]});
+        S_3_L = S_3_S ^ ({S_3_S[ 9:0], S_3_S[47:10]}) ^ ({S_3_S[16:0], S_3_S[47:17]});
+        S_4_L = S_4_S ^ ({S_4_S[ 6:0], S_4_S[47:07]}) ^ ({S_4_S[40:0], S_4_S[47:41]});
     end
 
 endmodule
