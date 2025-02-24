@@ -44,13 +44,6 @@ module tt_um_ascon_ironisland_top (
     wire [63:0] S_3_reg;
     wire [63:0] S_4_reg;
 
-    // TODO: Remove once extended registers back to 64 bits
-    assign S_0_reg[63:48] = 16'd0;
-    assign S_1_reg[63:48] = 16'd0;
-    assign S_2_reg[63:48] = 16'd0;
-    assign S_3_reg[63:48] = 16'd0;
-    assign S_4_reg[63:48] = 16'd0;
-
     // Control signals
     wire rounds_done;
     wire output_enable;
@@ -90,11 +83,11 @@ module tt_um_ascon_ironisland_top (
         .clk      (clk),
         .rst_n    (rst_n),
 
-        .S_0_reg  (S_0_reg[47:0]),
-        .S_1_reg  (S_1_reg[47:0]),
-        .S_2_reg  (S_2_reg[47:0]),
-        .S_3_reg  (S_3_reg[47:0]),
-        .S_4_reg  (S_4_reg[47:0]),
+        .S_0_reg  (S_0_reg),
+        .S_1_reg  (S_1_reg),
+        .S_2_reg  (S_2_reg),
+        .S_3_reg  (S_3_reg),
+        .S_4_reg  (S_4_reg),
 
         .rounds_done(rounds_done)
     );
