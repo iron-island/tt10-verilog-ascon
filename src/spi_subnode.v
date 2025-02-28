@@ -1,14 +1,26 @@
 
 // Commands
 // MSB = 0 for write, 1 for read
-`define WR_REG0_COMMAND    3'b000
-`define WR_REG1_COMMAND    3'b001
-`define WR_REG2_COMMAND    3'b010
-`define WR_OP_MODE_COMMAND 3'b011
-`define RD_REG0_COMMAND    3'b100
-`define RD_REG1_COMMAND    3'b101
-`define RD_REG2_COMMAND    3'b110
-`define RD_OP_MODE_COMMAND 3'b111
+`define WR_REG0_COMMAND    5'b00000
+`define WR_REG1_COMMAND    5'b00001
+`define WR_REG2_COMMAND    5'b00010
+`define WR_OP_MODE_COMMAND 5'b00011
+// TODO: Add writing to state registers?
+//`define WR_S_0_COMMAND     5'b00100
+//`define WR_S_1_COMMAND     5'b00101
+//`define WR_S_2_COMMAND     5'b00110
+//`define WR_S_3_COMMAND     5'b00111
+//`define WR_S_4_COMMAND     5'b01000
+
+`define RD_REG0_COMMAND    5'b10000
+`define RD_REG1_COMMAND    5'b10001
+`define RD_REG2_COMMAND    5'b10010
+`define RD_OP_MODE_COMMAND 5'b10011
+`define RD_S_0_COMMAND     5'b10100
+`define RD_S_1_COMMAND     5'b10101
+`define RD_S_2_COMMAND     5'b10110
+`define RD_S_3_COMMAND     5'b10111
+`define RD_S_4_COMMAND     5'b11000
 
 // SPI states
 `define INPUT_COMMAND_STATE 3'b000
@@ -34,7 +46,13 @@ module spi_subnode(
     input wire mosi,
 
     output reg miso,
-    output reg [2:0] operation_mode
+    output reg [2:0] operation_mode,
+
+    input wire [63:0] S_0_reg,
+    input wire [63:0] S_1_reg,
+    input wire [63:0] S_2_reg,
+    input wire [63:0] S_3_reg,
+    input wire [63:0] S_4_reg
 );
 
     reg cs;
@@ -43,19 +61,18 @@ module spi_subnode(
 
     reg [2:0] curr_state;
     reg [2:0] next_state;
-    reg [2:0] command;
-    reg [2:0] next_command;
+    reg [4:0] command;
     reg [6:0] counter;
     reg [6:0] next_counter;
 
     always@(posedge sck or negedge cs) begin
         if (csb) begin
             curr_state <= 3'd0;
-            command    <= 3'd0;
+            command    <= 5'd0;
             counter    <= 7'd2; // reset counter value to (no. of bits of command)-1
         end else begin
             curr_state <= next_state;
-            command    <= next_command;
+            command    <= (curr_state == `INPUT_COMMAND_STATE) ? {command[0], mosi} : command;
             counter    <= next_counter;
         end
     end
@@ -66,8 +83,6 @@ module spi_subnode(
     reg [127:0] reg2_128b;
 
     reg next_miso;
-
-    reg [2:0] operation_mode;
 
     always@(posedge sck or negedge rst_n) begin
         if (!rst_n) begin
@@ -91,13 +106,9 @@ module spi_subnode(
 
     // FSM
     reg counter_done;
-    reg [1:0] shift_left_command;
     reg [6:0] decr_counter;
 
     assign counter_done = (counter == 'd0);
-
-    assign shift_left_command = {command[0], mosi};
-
     assign decr_counter = (counter - 'd1);
 
     always@(*) begin
@@ -107,8 +118,6 @@ module spi_subnode(
                 next_miso = 1'b1;
 
                 if (counter_done) begin
-                    next_command = command;
-
                     case (command)
                         `WR_REG0_COMMAND    : begin next_counter = 'd127;   next_state = `INPUT_DATA_STATE;  end
                         `WR_REG1_COMMAND    : begin next_counter = 'd127;   next_state = `INPUT_DATA_STATE;  end
@@ -118,18 +127,19 @@ module spi_subnode(
                         `RD_REG1_COMMAND    : begin next_counter = 'd127;   next_state = `OUTPUT_DATA_STATE; end 
                         `RD_REG2_COMMAND    : begin next_counter = 'd127;   next_state = `OUTPUT_DATA_STATE; end 
                         `RD_OP_MODE_COMMAND : begin next_counter = 'd2;     next_state = `OUTPUT_MODE_STATE; end
+                        `RD_S_0_COMMAND     : begin next_counter = 'd63;    next_state = `OUTPUT_DATA_STATE; end
+                        `RD_S_1_COMMAND     : begin next_counter = 'd63;    next_state = `OUTPUT_DATA_STATE; end
+                        `RD_S_2_COMMAND     : begin next_counter = 'd63;    next_state = `OUTPUT_DATA_STATE; end
+                        `RD_S_3_COMMAND     : begin next_counter = 'd63;    next_state = `OUTPUT_DATA_STATE; end
+                        `RD_S_4_COMMAND     : begin next_counter = 'd63;    next_state = `OUTPUT_DATA_STATE; end
                         default             : begin next_counter = counter; next_state = curr_state;         end
                     endcase
                 end else begin
                     next_state   = curr_state;
-                    next_command = shift_left_command;
                     next_counter = decr_counter;
                 end
             end
             `INPUT_DATA_STATE : begin
-                // Command no longer being updated
-                next_command = command;
-
                 // Constant output
                 next_miso = 1'b1;
 
@@ -142,9 +152,6 @@ module spi_subnode(
                 end
             end
             `INPUT_MODE_STATE : begin
-                // Command no longer being updated
-                next_command = command;
-
                 // Constant output
                 next_miso = 1'b1;
 
@@ -157,9 +164,6 @@ module spi_subnode(
                 end
             end
             `OUTPUT_DATA_STATE : begin
-                // Command no longer being updated
-                next_command = command;
-
                 if (counter_done) begin
                     next_state   = `IDLE_STATE;
                     next_counter = counter;
@@ -173,6 +177,11 @@ module spi_subnode(
                     `RD_REG0_COMMAND : next_miso = reg0_128b[counter];
                     `RD_REG1_COMMAND : next_miso = reg1_128b[counter];
                     `RD_REG2_COMMAND : next_miso = reg2_128b[counter];
+                    `RD_S_0_COMMAND  : next_miso = S_0_reg[counter];
+                    `RD_S_1_COMMAND  : next_miso = S_1_reg[counter];
+                    `RD_S_2_COMMAND  : next_miso = S_2_reg[counter];
+                    `RD_S_3_COMMAND  : next_miso = S_3_reg[counter];
+                    `RD_S_4_COMMAND  : next_miso = S_4_reg[counter];
                     default          : next_miso = 1'b1;
                     // default case should be impossible during
                     //   this state, but added
@@ -180,9 +189,6 @@ module spi_subnode(
                 endcase
             end
             `OUTPUT_MODE_STATE : begin
-                // Command no longer being updated
-                next_command = command;
-
                 if (counter_done) begin
                     next_state   = `IDLE_STATE;
                     next_counter = counter;
@@ -196,7 +202,6 @@ module spi_subnode(
             end
             `IDLE_STATE : begin
                 next_state   = curr_state;
-                next_command = command;
                 next_counter = counter;
 
                 next_miso = miso;
@@ -205,7 +210,6 @@ module spi_subnode(
                 // default case is the same as idle state,
                 //   this case is not possible, but added for lint clean-up
                 next_state   = curr_state;
-                next_command = command;
                 next_counter = counter;
 
                 next_miso = miso;

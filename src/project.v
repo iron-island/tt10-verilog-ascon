@@ -5,27 +5,9 @@
 
 `default_nettype none
 
-// Output states
-`define OUT_DOUBLE_BYTES_00 5'd00
-`define OUT_DOUBLE_BYTES_01 5'd01
-`define OUT_DOUBLE_BYTES_02 5'd02
-`define OUT_DOUBLE_BYTES_03 5'd03
-`define OUT_DOUBLE_BYTES_04 5'd04
-`define OUT_DOUBLE_BYTES_05 5'd05
-`define OUT_DOUBLE_BYTES_06 5'd06
-`define OUT_DOUBLE_BYTES_07 5'd07
-`define OUT_DOUBLE_BYTES_08 5'd08
-`define OUT_DOUBLE_BYTES_09 5'd09
-`define OUT_DOUBLE_BYTES_10 5'd10
-`define OUT_DOUBLE_BYTES_11 5'd11
-`define OUT_DOUBLE_BYTES_12 5'd12
-`define OUT_DOUBLE_BYTES_13 5'd13
-`define OUT_DOUBLE_BYTES_14 5'd14
-`define OUT_DOUBLE_BYTES_15 5'd15
-
 // TODO: Put inside .f file instead
-`include "./state_controller.v"
 `include "./asconp.v"
+`include "./spi_subnode.v"
 
 module tt_um_ascon_ironisland_top (
     input  wire [7:0] ui_in,    // Dedicated inputs
@@ -46,37 +28,35 @@ module tt_um_ascon_ironisland_top (
 
     // Control signals
     wire rounds_done;
-    wire output_enable;
+    wire operation_mode;
 
-    // I/O drivers
-    wire [15:0] double_byte_output;
+    // SPI
+    wire csb;
+    wire mosi;
+    wire miso;
+    wire sck;
 
+    assign csb  = uio_in[0];
+    assign mosi = uio_in[1];
+    assign sck  = uio_in[3];
+
+    // TODO
     // All output pins must be assigned. If not used, assign to 0.
-    assign uo_out  = double_byte_output[ 7:0];
-    assign uio_out = double_byte_output[15:8];
-    assign uio_oe  = {8{output_enable}};
+    assign uo_out  = 8'd0;
+
+    assign uio_out[1:0] = 2'd0;
+    assign uio_out[2]   = miso;
+    assign uio_out[7:3] = 5'd0;
+
+    assign uio_oe[1:0] = 2'd0;
+    assign uio_oe[2]   = 1'b1; // always used for MISO, which always drives a 1 even if not being read from
+    assign uio_oe[7:3] = 5'd0;
 
     // List all unused inputs to prevent warnings
-    wire _unused = &{ena, ui_in[7:0], uio_in[7:0]};
-
-    // Instantiate state controller
-    state_controller u_ctrl(
-        .clk      (clk),
-        .rst_n    (rst_n),
-
-        .S_0_reg  (S_0_reg),
-        .S_1_reg  (S_1_reg),
-        .S_2_reg  (S_2_reg),
-        .S_3_reg  (S_3_reg),
-        .S_4_reg  (S_4_reg),
-
-        .rounds_done(rounds_done),
-
-        .output_enable(output_enable),
-        .double_byte_output(double_byte_output)
-    );
+    wire _unused = &{ena, ui_in[7:0], uio_in[7:4], uio_in[2]};
 
     // Instantiate permutations
+    // TODO: Make num_rounds an input instead of a parameter
     asconp #(
         .NUM_ROUNDS(12)
     ) u_asconp(
@@ -90,6 +70,25 @@ module tt_um_ascon_ironisland_top (
         .S_4_reg  (S_4_reg),
 
         .rounds_done(rounds_done)
+    );
+
+    // Instantiate SPI subnode
+    spi_subnode u_spi(
+        .rst_n    (rst_n),
+
+        .sck      (sck),
+        .csb      (csb),
+        .mosi     (mosi),
+
+        .miso     (miso),
+
+        .operation_mode (operation_mode),
+
+        .S_0_reg  (S_0_reg),
+        .S_1_reg  (S_1_reg),
+        .S_2_reg  (S_2_reg),
+        .S_3_reg  (S_3_reg),
+        .S_4_reg  (S_4_reg)
     );
 
 endmodule
