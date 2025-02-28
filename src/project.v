@@ -19,6 +19,7 @@ module tt_um_ascon_ironisland_top (
     input  wire       clk,      // clock
     input  wire       rst_n     // reset_n - low to reset
 );
+
     // State registers
     wire [63:0] S_0_reg;
     wire [63:0] S_1_reg;
@@ -27,8 +28,8 @@ module tt_um_ascon_ironisland_top (
     wire [63:0] S_4_reg;
 
     // Control signals
-    wire rounds_done;
-    wire operation_mode;
+    wire       rounds_done;
+    wire [2:0] operation_mode;
 
     // SPI
     wire csb;

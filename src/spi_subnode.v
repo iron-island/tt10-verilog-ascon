@@ -55,22 +55,18 @@ module spi_subnode(
     input wire [63:0] S_4_reg
 );
 
-    reg cs;
-
-    assign cs = !csb;
-
     reg [2:0] curr_state;
     reg [2:0] next_state;
     reg [4:0] command;
     reg [6:0] counter;
     reg [6:0] next_counter;
 
-    always@(posedge sck or negedge cs) begin
-        if (csb) begin
+    always@(posedge sck or negedge rst_n) begin
+        if (!rst_n) begin
             curr_state <= 3'd0;
             command    <= 5'd0;
             counter    <= 7'd2; // reset counter value to (no. of bits of command)-1
-        end else begin
+        end else if (csb == 1'b0) begin
             curr_state <= next_state;
             command    <= (curr_state == `INPUT_COMMAND_STATE) ? {command[0], mosi} : command;
             counter    <= next_counter;
