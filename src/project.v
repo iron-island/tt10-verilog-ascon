@@ -77,7 +77,9 @@ module tt_um_ascon_ironisland_top (
     spi_subnode u_spi(
         .rst_n    (rst_n),
 
-        .sck      (sck),
+        // TODO: check if registers still get optimized out if clk is used as
+        // sck
+        .sck      (clk),
         .csb      (csb),
         .mosi     (mosi),
 
