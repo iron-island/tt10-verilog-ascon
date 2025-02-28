@@ -17,17 +17,18 @@ async def test_project(dut):
     # Reset
     dut._log.info("Reset")
     dut.ena.value = 1
-    dut.ui_in.value = 0
-    dut.uio_in.value = 0
     dut.rst_n.value = 0
+    dut.uio_in.value = 0b00000001;
+
+    # Unused inputs
+    dut.ui_in.value = 0
     await ClockCycles(dut.clk, 10)
     dut.rst_n.value = 1
 
     dut._log.info("Test project behavior")
 
     # Set the input values you want to test
-    dut.ui_in.value = 20
-    dut.uio_in.value = 30
+    # TODO
 
     # Wait for several clock cycles to see the output values
     await ClockCycles(dut.clk, 36)
