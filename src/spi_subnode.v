@@ -11,7 +11,6 @@
 //`define WR_S_2_COMMAND     5'b00110
 //`define WR_S_3_COMMAND     5'b00111
 //`define WR_S_4_COMMAND     5'b01000
-
 `define RD_REG0_COMMAND    5'b10000
 `define RD_REG1_COMMAND    5'b10001
 `define RD_REG2_COMMAND    5'b10010
@@ -65,7 +64,7 @@ module spi_subnode(
         if (!rst_n) begin
             curr_state <= 3'd0;
             command    <= 5'd0;
-            counter    <= 7'd2; // reset counter value to (no. of bits of command)-1
+            counter    <= 7'd4; // reset counter value to (no. of bits of command)-1
         end else if (csb == 1'b0) begin
             curr_state <= next_state;
             command    <= (curr_state == `INPUT_COMMAND_STATE) ? {command[0], mosi} : command;
