@@ -6,9 +6,19 @@ from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles
 
 # SPI command constants
-WR_REG0_COMMAND = 0b00000
-WR_REG1_COMMAND = 0b00001
-WR_REG2_COMMAND = 0b00010
+WR_REG0_COMMAND    = 0b00000
+WR_REG1_COMMAND    = 0b00001
+WR_REG2_COMMAND    = 0b00010
+WR_OP_MODE_COMMAND = 0b00011
+RD_REG0_COMMAND    = 0b10000
+RD_REG1_COMMAND    = 0b10001
+RD_REG2_COMMAND    = 0b10010
+RD_OP_MODE_COMMAND = 0b10011
+RD_S_0_COMMAND     = 0b10100
+RD_S_1_COMMAND     = 0b10101
+RD_S_2_COMMAND     = 0b10110
+RD_S_3_COMMAND     = 0b10111
+RD_S_4_COMMAND     = 0b11000
 
 def get_reg_bit(reg, bit):
     # return reg[bit]
@@ -85,6 +95,64 @@ async def test_project(dut):
     for bit in range(127, -1, -1):
         # Drive MOSI
         dut.uio_in.value = update_bit(temp, get_reg_bit(data, bit), 1)
+
+        # Wait for 1 clock cycle delay
+        await ClockCycles(dut.clk, 1)
+
+        # Drive SCK posedge
+        dut.uio_in.value = update_bit(dut.uio_in.value, 1, 3)
+
+        # Wait for 1 clock cycle delay
+        await ClockCycles(dut.clk, 1)
+
+        # Drive SCK negedge
+        temp = update_bit(dut.uio_in.value, 0, 3)
+
+    dut.uio_in.value = temp
+
+    # Wait for 1 clock cycle delay
+    await ClockCycles(dut.clk, 1)
+
+    # Drive CSB high
+    dut.uio_in.value = update_bit(dut.uio_in.value, 1, 0)
+
+    # Wait for arbitrary 10 clock cycle delay
+    await ClockCycles(dut.clk, 10)
+
+    #----------------------------#
+    # SPI Reading from Registers #
+    #----------------------------#
+
+    command = RD_REG1_COMMAND
+
+    # Drive SCK low and CSB low
+    dut.uio_in.value = 0b00000000
+
+    # Wait for 1 clock cycle delay
+    await ClockCycles(dut.clk, 1)
+    temp = dut.uio_in.value
+
+    # Drive command code
+    for bit in range(4, -1, -1):
+        # Drive MOSI
+        dut.uio_in.value = update_bit(temp, get_reg_bit(command, bit), 1)
+
+        # Wait for 1 clock cycle delay
+        await ClockCycles(dut.clk, 1)
+
+        # Drive SCK posedge
+        dut.uio_in.value = update_bit(dut.uio_in.value, 1, 3)
+
+        # Wait for 1 clock cycle delay
+        await ClockCycles(dut.clk, 1)
+
+        # Drive SCK negedge
+        temp = update_bit(dut.uio_in.value, 0, 3)
+
+    # Drive SCK for 128 cycles for reading
+    for bit in range(127, -1, -1):
+        # Drive uio_in with temp
+        dut.uio_in.value = temp
 
         # Wait for 1 clock cycle delay
         await ClockCycles(dut.clk, 1)
