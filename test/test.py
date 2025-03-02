@@ -37,35 +37,37 @@ def update_bit(signal, bitval, bitstart, bitend=None):
 
     return temp
 
-@cocotb.test()
-async def test_project(dut):
-    dut._log.info("Start")
+#async def spi_write_command(dut, command):
+#
+#    # Drive SCK low and CSB low
+#    dut.uio_in.value = 0b00000000
+#
+#    # Wait for 1 clock cycle delay
+#    await ClockCycles(dut.clk, 1)
+#    temp = dut.uio_in.value
+#
+#    # Drive command code
+#    for bit in range(4, -1, -1):
+#        # Drive MOSI
+#        dut.uio_in.value = update_bit(temp, get_reg_bit(command, bit), 1)
+#
+#        # Wait for 1 clock cycle delay
+#        await ClockCycles(dut.clk, 1)
+#
+#        # Drive SCK posedge
+#        dut.uio_in.value = update_bit(dut.uio_in.value, 1, 3)
+#
+#        # Wait for 1 clock cycle delay
+#        await ClockCycles(dut.clk, 1)
+#
+#        # Drive SCK negedge
+#        temp = update_bit(dut.uio_in.value, 0, 3)
+#
+#    dut.uio_in.value = temp
 
-    # Set the clock period to 10 us (100 KHz)
-    clock = Clock(dut.clk, 10, units="us")
-    cocotb.start_soon(clock.start())
-
-    # Reset
-    dut._log.info("Reset")
-    dut.ena.value = 1
-    dut.rst_n.value = 0
-    dut.uio_in.value = 0b00000001;
-
-    # Unused inputs
-    dut.ui_in.value = 0
-    await ClockCycles(dut.clk, 10)
-    dut.rst_n.value = 1
-    await ClockCycles(dut.clk, 10)
-
-    dut._log.info("SPI write test: WR_REG0_COMMAND")
-
-    #--------------------------#
-    # SPI Writing to Registers #
-    #--------------------------#
-
-    #spi_write(dut, WR_REG1_COMMAND, 0x0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f)
-    command = WR_REG1_COMMAND
-    data = 0xf0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0
+async def spi_write(dut, command, data, add_cycles=0):
+    # Print to log
+    dut._log.info(f'SPI write: command={command:>05b}, data = {hex(data)}')
 
     # Drive SCK low and CSB low
     dut.uio_in.value = 0b00000000
@@ -74,7 +76,7 @@ async def test_project(dut):
     await ClockCycles(dut.clk, 1)
     temp = dut.uio_in.value
 
-    # Drive command code
+    # Drive MOSI for command
     for bit in range(4, -1, -1):
         # Drive MOSI
         dut.uio_in.value = update_bit(temp, get_reg_bit(command, bit), 1)
@@ -91,7 +93,7 @@ async def test_project(dut):
         # Drive SCK negedge
         temp = update_bit(dut.uio_in.value, 0, 3)
 
-    # Drive data
+    # Drive MOSI for data
     for bit in range(127, -1, -1):
         # Drive MOSI
         dut.uio_in.value = update_bit(temp, get_reg_bit(data, bit), 1)
@@ -116,14 +118,12 @@ async def test_project(dut):
     # Drive CSB high
     dut.uio_in.value = update_bit(dut.uio_in.value, 1, 0)
 
-    # Wait for arbitrary 10 clock cycle delay
-    await ClockCycles(dut.clk, 10)
+    # Wait for 1+add_cycles clock cycle delay
+    await ClockCycles(dut.clk, 1+add_cycles)
 
-    #----------------------------#
-    # SPI Reading from Registers #
-    #----------------------------#
-
-    command = RD_REG1_COMMAND
+async def spi_read(dut, command, add_cycles=0):
+    # Print to log
+    dut._log.info(f'SPI read: command={command:>05b}')
 
     # Drive SCK low and CSB low
     dut.uio_in.value = 0b00000000
@@ -132,7 +132,7 @@ async def test_project(dut):
     await ClockCycles(dut.clk, 1)
     temp = dut.uio_in.value
 
-    # Drive command code
+    # Drive MOSI for command
     for bit in range(4, -1, -1):
         # Drive MOSI
         dut.uio_in.value = update_bit(temp, get_reg_bit(command, bit), 1)
@@ -174,11 +174,43 @@ async def test_project(dut):
     # Drive CSB high
     dut.uio_in.value = update_bit(dut.uio_in.value, 1, 0)
 
-    # Wait for 1 clock cycle delay
-    await ClockCycles(dut.clk, 36)
+    # Wait for 1+add_cycles clock cycle delay
+    await ClockCycles(dut.clk, 1+add_cycles)
 
-    # Wait for several clock cycles to see the output values
-    #await ClockCycles(dut.clk, 36)
+@cocotb.test()
+async def test_project(dut):
+    dut._log.info("Start")
+
+    # Set the clock period to 10 us (100 KHz)
+    clock = Clock(dut.clk, 10, units="us")
+    cocotb.start_soon(clock.start())
+
+    # Reset
+    dut._log.info("Reset")
+    dut.ena.value = 1
+    dut.rst_n.value = 0
+    dut.uio_in.value = 0b00000001;
+
+    # Unused inputs
+    dut.ui_in.value = 0
+    await ClockCycles(dut.clk, 10)
+    dut.rst_n.value = 1
+    await ClockCycles(dut.clk, 10)
+
+    #--------------------------#
+    # SPI Writing to Registers #
+    #--------------------------#
+
+    await spi_write(dut, WR_REG1_COMMAND, 0x0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f, 10)
+
+    #----------------------------#
+    # SPI Reading from Registers #
+    #----------------------------#
+
+    await spi_read(dut, RD_REG1_COMMAND)
+
+    # Wait for 10 arbitrary clock cycles to see the output values
+    await ClockCycles(dut.clk, 10)
 
     # TODO: add checkers
     # The following assersion is just an example of how to check the output values.
