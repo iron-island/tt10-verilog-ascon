@@ -58,6 +58,8 @@ module ascon(
     reg load_init_val;
     reg rounds_enable;
 
+    reg [3:0] round_ctr;
+
     reg [2:0] post_init_state;
 
     reg ascon_counter_done;
@@ -66,16 +68,19 @@ module ascon(
     assign ascon_counter_done = (ascon_counter == 'd0);
     assign decr_ascon_counter = (ascon_counter - 'd1);
 
+    // TODO: optimize round_ctr
     always@(*) begin
         load_init_val = 1'b0;
         rounds_enable = 1'b0;
+
+        round_ctr = 4'd0;
 
         case (ascon_state)
             `IDLE_STATE      : begin
                 if (operation_ready) begin
                     next_ascon_state = `INIT_STATE;
 
-                    next_ascon_counter = 4'd11;
+                    next_ascon_counter = 4'd14;
 
                     load_init_val = 1'b1;
                 end else begin
@@ -95,6 +100,8 @@ module ascon(
                     next_ascon_counter = decr_ascon_counter;
 
                     rounds_enable = 1'b1;
+
+                    round_ctr = (4'd14 - ascon_counter);
                 end
             end
             `DATA_PROC_STATE : begin
@@ -260,6 +267,7 @@ module ascon(
 
         .load_init_val(load_init_val),
         .rounds_enable(rounds_enable),
+        .round_ctr(round_ctr),
 
         .S_0_reg  (S_0_reg),
         .S_1_reg  (S_1_reg),
