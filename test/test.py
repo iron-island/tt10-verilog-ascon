@@ -45,34 +45,6 @@ def update_bit(signal, bitval, bitstart, bitend=None):
 
     return temp
 
-#async def spi_write_command(dut, command):
-#
-#    # Drive SCK low and CSB low
-#    dut.uio_in.value = 0b00000000
-#
-#    # Wait for 1 clock cycle delay
-#    await ClockCycles(dut.clk, 1)
-#    temp = dut.uio_in.value
-#
-#    # Drive command code
-#    for bit in range(4, -1, -1):
-#        # Drive MOSI
-#        dut.uio_in.value = update_bit(temp, get_reg_bit(command, bit), 1)
-#
-#        # Wait for 1 clock cycle delay
-#        await ClockCycles(dut.clk, 1)
-#
-#        # Drive SCK posedge
-#        dut.uio_in.value = update_bit(dut.uio_in.value, 1, 3)
-#
-#        # Wait for 1 clock cycle delay
-#        await ClockCycles(dut.clk, 1)
-#
-#        # Drive SCK negedge
-#        temp = update_bit(dut.uio_in.value, 0, 3)
-#
-#    dut.uio_in.value = temp
-
 async def spi_wr_reg(dut, command, data, add_cycles=0):
     # Print to log
     dut._log.info(f'SPI write: command={command:>05b}, data = {hex(data)}')
@@ -266,8 +238,16 @@ async def test_project(dut):
     # SPI Writing to Registers #
     #--------------------------#
 
-    await spi_wr_reg(dut, WR_REG0_COMMAND, 0x0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a, 1)
-    await spi_wr_reg(dut, WR_REG1_COMMAND, 0x0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f, 1)
+    # TODO: Use randomized inputs from Python reference implementation
+    #       For now, using random initial states from one run of
+    #         Python reference implementation
+    #x0=00001000808c0001
+    #x1=f23494a4b1f09f72
+    #x2=1120821ab7ef5039
+    #x3=0288f6cd3f44a4c2
+    #x4=122103181031374d
+    await spi_wr_reg(dut, WR_REG0_COMMAND, 0xf23494a4b1f09f721120821ab7ef5039, 1)
+    await spi_wr_reg(dut, WR_REG1_COMMAND, 0x0288f6cd3f44a4c2122103181031374d, 1)
     await spi_wr_reg(dut, WR_REG2_COMMAND, 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee, 1)
 
     await spi_wr_mode(dut, ENCRYPT_MODE, 10)
