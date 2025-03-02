@@ -20,6 +20,14 @@ RD_S_2_COMMAND     = 0b10110
 RD_S_3_COMMAND     = 0b10111
 RD_S_4_COMMAND     = 0b11000
 
+# Operation mode constants
+IDLE_MODE    = 0b000
+ENCRYPT_MODE = 0b001
+DECRYPT_MODE = 0b010
+HASH_MODE    = 0b011
+XOF_MODE     = 0b100
+CXOF_MODE    = 0b101
+
 def get_reg_bit(reg, bit):
     # return reg[bit]
     return (reg >> bit) & 1
@@ -65,7 +73,7 @@ def update_bit(signal, bitval, bitstart, bitend=None):
 #
 #    dut.uio_in.value = temp
 
-async def spi_write(dut, command, data, add_cycles=0):
+async def spi_wr_reg(dut, command, data, add_cycles=0):
     # Print to log
     dut._log.info(f'SPI write: command={command:>05b}, data = {hex(data)}')
 
@@ -97,6 +105,63 @@ async def spi_write(dut, command, data, add_cycles=0):
     for bit in range(127, -1, -1):
         # Drive MOSI
         dut.uio_in.value = update_bit(temp, get_reg_bit(data, bit), 1)
+
+        # Wait for 1 clock cycle delay
+        await ClockCycles(dut.clk, 1)
+
+        # Drive SCK posedge
+        dut.uio_in.value = update_bit(dut.uio_in.value, 1, 3)
+
+        # Wait for 1 clock cycle delay
+        await ClockCycles(dut.clk, 1)
+
+        # Drive SCK negedge
+        temp = update_bit(dut.uio_in.value, 0, 3)
+
+    dut.uio_in.value = temp
+
+    # Wait for 1 clock cycle delay
+    await ClockCycles(dut.clk, 1)
+
+    # Drive CSB high
+    dut.uio_in.value = update_bit(dut.uio_in.value, 1, 0)
+
+    # Wait for 1+add_cycles clock cycle delay
+    await ClockCycles(dut.clk, 1+add_cycles)
+
+async def spi_wr_mode(dut, mode, add_cycles=0):
+    # Print to log
+    dut._log.info(f'SPI write mode: mode={mode:>03b}')
+    command = WR_OP_MODE_COMMAND
+
+    # Drive SCK low and CSB low
+    dut.uio_in.value = 0b00000000
+
+    # Wait for 1 clock cycle delay
+    await ClockCycles(dut.clk, 1)
+    temp = dut.uio_in.value
+
+    # Drive MOSI for command
+    for bit in range(4, -1, -1):
+        # Drive MOSI
+        dut.uio_in.value = update_bit(temp, get_reg_bit(command, bit), 1)
+
+        # Wait for 1 clock cycle delay
+        await ClockCycles(dut.clk, 1)
+
+        # Drive SCK posedge
+        dut.uio_in.value = update_bit(dut.uio_in.value, 1, 3)
+
+        # Wait for 1 clock cycle delay
+        await ClockCycles(dut.clk, 1)
+
+        # Drive SCK negedge
+        temp = update_bit(dut.uio_in.value, 0, 3)
+
+    # Drive MOSI for mode
+    for bit in range(2, -1, -1):
+        # Drive MOSI
+        dut.uio_in.value = update_bit(temp, get_reg_bit(mode, bit), 1)
 
         # Wait for 1 clock cycle delay
         await ClockCycles(dut.clk, 1)
@@ -201,7 +266,11 @@ async def test_project(dut):
     # SPI Writing to Registers #
     #--------------------------#
 
-    await spi_write(dut, WR_REG1_COMMAND, 0x0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f, 10)
+    await spi_wr_reg(dut, WR_REG0_COMMAND, 0x0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a, 1)
+    await spi_wr_reg(dut, WR_REG1_COMMAND, 0x0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f, 1)
+    await spi_wr_reg(dut, WR_REG2_COMMAND, 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee, 1)
+
+    await spi_wr_mode(dut, ENCRYPT_MODE, 10)
 
     #----------------------------#
     # SPI Reading from Registers #
