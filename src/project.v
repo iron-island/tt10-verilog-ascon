@@ -6,8 +6,9 @@
 `default_nettype none
 
 // TODO: Put inside .f file instead
-`include "./asconp.v"
 `include "./spi_subnode.v"
+`include "./asconp.v"
+`include "./ascon.v"
 
 module tt_um_ascon_ironisland_top (
     input  wire [7:0] ui_in,    // Dedicated inputs
@@ -20,6 +21,11 @@ module tt_um_ascon_ironisland_top (
     input  wire       rst_n     // reset_n - low to reset
 );
 
+    // Input/output registers
+    wire [127:0] reg0_128b;
+    wire [127:0] reg1_128b;
+    wire [127:0] reg2_128b;
+
     // State registers
     wire [63:0] S_0_reg;
     wire [63:0] S_1_reg;
@@ -28,8 +34,8 @@ module tt_um_ascon_ironisland_top (
     wire [63:0] S_4_reg;
 
     // Control signals
-    wire       rounds_done;
     wire [2:0] operation_mode;
+    wire       operation_ready;
 
     // SPI
     wire csb;
@@ -56,21 +62,23 @@ module tt_um_ascon_ironisland_top (
     // List all unused inputs to prevent warnings
     wire _unused = &{ena, ui_in[7:0], uio_in[7:4], uio_in[2]};
 
-    // Instantiate permutations
-    // TODO: Make num_rounds an input instead of a parameter
-    asconp #(
-        .NUM_ROUNDS(12)
-    ) u_asconp(
+    // Instantiate Ascon hardware accelerator
+    ascon u_ascon(
         .clk      (clk),
         .rst_n    (rst_n),
+
+        .reg0_128b(reg0_128b),
+        .reg1_128b(reg1_128b),
+        .reg2_128b(reg2_128b),
+
+        .operation_mode (operation_mode),
+        .operation_ready(operation_ready),
 
         .S_0_reg  (S_0_reg),
         .S_1_reg  (S_1_reg),
         .S_2_reg  (S_2_reg),
         .S_3_reg  (S_3_reg),
-        .S_4_reg  (S_4_reg),
-
-        .rounds_done(rounds_done)
+        .S_4_reg  (S_4_reg)
     );
 
     // Instantiate SPI subnode
@@ -83,7 +91,12 @@ module tt_um_ascon_ironisland_top (
 
         .miso     (miso),
 
+        .reg0_128b(reg0_128b),
+        .reg1_128b(reg1_128b),
+        .reg2_128b(reg2_128b),
+
         .operation_mode (operation_mode),
+        .operation_ready(operation_ready),
 
         .S_0_reg  (S_0_reg),
         .S_1_reg  (S_1_reg),

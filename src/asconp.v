@@ -2,6 +2,15 @@ module asconp(
     input wire clk,
     input wire rst_n,
 
+    input wire [63:0] S_0_init,
+    input wire [63:0] S_1_init,
+    input wire [63:0] S_2_init,
+    input wire [63:0] S_3_init,
+    input wire [63:0] S_4_init,
+
+    input wire load_init_val,
+    input wire rounds_enable,
+
     output reg [63:0] S_0_reg,
     output reg [63:0] S_1_reg,
     output reg [63:0] S_2_reg,
@@ -21,18 +30,14 @@ module asconp(
     reg [63:0] S_3_L;
     reg [63:0] S_4_L;
 
-    reg       state_initialized;
     reg [3:0] round_ctr;
 
     assign rounds_done = (round_ctr == NUM_ROUNDS);
 
     always@(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            state_initialized <= 1'b0;
             round_ctr   <= 4'd0;
-        end else if (!state_initialized) begin
-            state_initialized <= 1'b1;
-        end else if (round_ctr < NUM_ROUNDS) begin
+        end else if ((rounds_enable) && (round_ctr < NUM_ROUNDS)) begin
             round_ctr   <= round_ctr + 1'b1;
         end
     end
@@ -44,7 +49,13 @@ module asconp(
             S_2_reg <= 64'd0;
             S_3_reg <= 64'd0;
             S_4_reg <= 64'd0;
-        end else if (!state_initialized) begin
+        end else if (load_init_val) begin
+            S_0_reg <= S_0_init;
+            S_1_reg <= S_1_init;
+            S_2_reg <= S_2_init;
+            S_3_reg <= S_3_init;
+            S_4_reg <= S_4_init;
+
             // TODO: Replace with actual initialization via state machine
             //       For now, using random initial states from one run of
             //         Python reference implementation
@@ -53,12 +64,12 @@ module asconp(
             //x2=1120821ab7ef5039
             //x3=0288f6cd3f44a4c2
             //x4=122103181031374d
-            S_0_reg <= 64'h00001000808c0001;
-            S_1_reg <= 64'hf23494a4b1f09f72;
-            S_2_reg <= 64'h1120821ab7ef5039;
-            S_3_reg <= 64'h0288f6cd3f44a4c2;
-            S_4_reg <= 64'h122103181031374d;
-        end else if (round_ctr < NUM_ROUNDS) begin
+            //S_0_reg <= 64'h00001000808c0001;
+            //S_1_reg <= 64'hf23494a4b1f09f72;
+            //S_2_reg <= 64'h1120821ab7ef5039;
+            //S_3_reg <= 64'h0288f6cd3f44a4c2;
+            //S_4_reg <= 64'h122103181031374d;
+        end else if ((rounds_enable) && (round_ctr < NUM_ROUNDS)) begin
             S_0_reg <= S_0_L;
             S_1_reg <= S_1_L;
             S_2_reg <= S_2_L;

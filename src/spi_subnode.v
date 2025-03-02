@@ -27,15 +27,7 @@
 `define INPUT_MODE_STATE    3'b010
 `define OUTPUT_DATA_STATE   3'b011
 `define OUTPUT_MODE_STATE   3'b100
-`define IDLE_STATE          3'b101
-
-// Operation modes
-`define IDLE_MODE    3'b000
-`define ENCRYPT_MODE 3'b001
-`define DECRYPT_MODE 3'b010
-`define HASH_MODE    3'b011
-`define XOF_MODE     3'b100
-`define CXOF_MODE    3'b101
+`define IDLE_SPI_STATE      3'b101
 
 module spi_subnode(
     input wire rst_n,
@@ -45,7 +37,13 @@ module spi_subnode(
     input wire mosi,
 
     output reg miso,
+
+    output reg [127:0] reg0_128b,
+    output reg [127:0] reg1_128b,
+    output reg [127:0] reg2_128b,
+
     output reg [2:0] operation_mode,
+    output reg       operation_ready,
 
     input wire [63:0] S_0_reg,
     input wire [63:0] S_1_reg,
@@ -87,23 +85,26 @@ module spi_subnode(
     end
 
     // Input/output registers
-    reg [127:0] reg0_128b;
-    reg [127:0] reg1_128b;
-    reg [127:0] reg2_128b;
-
     always@(posedge sck or negedge rst_n) begin
         if (!rst_n) begin
             reg0_128b <= 128'd0;
             reg1_128b <= 128'd0;
             reg2_128b <= 128'd0;
 
-            operation_mode <= 3'b000;
+            operation_mode  <= 3'b000;
+            operation_ready <= 1'b0;
         end else if (curr_state == `INPUT_DATA_STATE) begin
             reg0_128b <= (command == `WR_REG0_COMMAND) ? {reg0_128b[126:0], mosi} : reg0_128b;
             reg1_128b <= (command == `WR_REG1_COMMAND) ? {reg1_128b[126:0], mosi} : reg1_128b;
             reg2_128b <= (command == `WR_REG2_COMMAND) ? {reg2_128b[126:0], mosi} : reg2_128b;
         end else if (curr_state == `INPUT_MODE_STATE) begin
             operation_mode <= {operation_mode[1:0], mosi};
+        end else if (curr_state == `IDLE_SPI_STATE) begin
+            if (command == `WR_OP_MODE_COMMAND) begin
+                operation_ready <= 1'b1;
+            end else begin
+                operation_ready <= 1'b0;
+            end
         end
     end
 
@@ -147,7 +148,7 @@ module spi_subnode(
                 next_miso = 1'b1;
 
                 if (counter_done) begin
-                    next_state   = `IDLE_STATE;
+                    next_state   = `IDLE_SPI_STATE;
                     next_counter = counter;
                 end else begin
                     next_state   = curr_state;
@@ -159,7 +160,7 @@ module spi_subnode(
                 next_miso = 1'b1;
 
                 if (counter_done) begin
-                    next_state   = `IDLE_STATE;
+                    next_state   = `IDLE_SPI_STATE;
                     next_counter = counter;
                 end else begin
                     next_state   = curr_state;
@@ -168,7 +169,7 @@ module spi_subnode(
             end
             `OUTPUT_DATA_STATE : begin
                 if (counter_done) begin
-                    next_state   = `IDLE_STATE;
+                    next_state   = `IDLE_SPI_STATE;
                     next_counter = counter;
                 end else begin
                     next_state   = curr_state;
@@ -193,7 +194,7 @@ module spi_subnode(
             end
             `OUTPUT_MODE_STATE : begin
                 if (counter_done) begin
-                    next_state   = `IDLE_STATE;
+                    next_state   = `IDLE_SPI_STATE;
                     next_counter = counter;
                 end else begin
                     next_state   = curr_state;
@@ -203,7 +204,7 @@ module spi_subnode(
                 // Output MISO
                 next_miso = operation_mode[counter];
             end
-            `IDLE_STATE : begin
+            `IDLE_SPI_STATE : begin
                 next_state   = curr_state;
                 next_counter = counter;
 
