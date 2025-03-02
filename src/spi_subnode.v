@@ -64,6 +64,8 @@ module spi_subnode(
     reg [6:0] counter;
     reg [6:0] next_counter;
 
+    reg counter_done;
+
     reg next_miso;
 
     assign next_command = {command[3:0], mosi};
@@ -99,8 +101,8 @@ module spi_subnode(
             reg2_128b <= (command == `WR_REG2_COMMAND) ? {reg2_128b[126:0], mosi} : reg2_128b;
         end else if (curr_state == `INPUT_MODE_STATE) begin
             operation_mode <= {operation_mode[1:0], mosi};
-        end else if (curr_state == `IDLE_SPI_STATE) begin
-            if (command == `WR_OP_MODE_COMMAND) begin
+
+            if (counter_done) begin
                 operation_ready <= 1'b1;
             end else begin
                 operation_ready <= 1'b0;
@@ -109,7 +111,6 @@ module spi_subnode(
     end
 
     // FSM
-    reg counter_done;
     reg [6:0] decr_counter;
 
     assign counter_done = (counter == 'd0);
