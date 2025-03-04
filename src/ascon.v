@@ -140,7 +140,7 @@ module ascon(
                 if (ascon_counter_done) begin
                     next_ascon_state = post_init_state;
 
-                    next_ascon_counter = 4'd10;
+                    next_ascon_counter = 4'd9;
 
                     load_val = 1'b1;
 
@@ -180,7 +180,7 @@ module ascon(
                     S_2_load_val = S_2_reg;
                     S_3_load_val = S_3_reg;
                     S_4_load_val = {S_4_reg[63:1], xor_128b_out[0]};
-                end else if (ascon_counter == 'd10) begin
+                end else if (ascon_counter == 'd9) begin
                     load_val = 1'b1;
 
                     // Update XOR inputs
@@ -197,7 +197,7 @@ module ascon(
                     rounds_enable = 1'b1;
 
                     // TODO: check
-                    round_ctr = (4'd9 - ascon_counter);
+                    round_ctr = (4'd8 - ascon_counter);
                 end
             end
             `TEXT_PROC_STATE : begin
