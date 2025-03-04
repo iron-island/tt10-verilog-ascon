@@ -2,6 +2,14 @@ name: docs
 
 on:
   push:
+    # Exclude unrelated file changes from triggering workflow
+    # Ref: https://stackoverflow.com/questions/69557828/stop-triggering-github-actions-on-updating-some-files-in-repository
+    paths-ignore:
+      - info.yaml
+      - src/*
+      - test/*
+      - .github/workflows/gds.yaml
+      - .github/workflows/test.yaml
   workflow_dispatch:
 
 jobs:

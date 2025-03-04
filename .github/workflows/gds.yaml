@@ -2,6 +2,11 @@ name: gds
 
 on:
   push:
+    # Add path filter to only rerun RTL-to-GDS flow when RTL changes
+    # Ref: https://stackoverflow.com/questions/63822219/how-to-run-github-actions-workflow-only-if-the-pushed-files-are-in-a-specific-fo
+    paths:
+      - src/*
+      - .github/workflows/gds.yaml
   workflow_dispatch:
 
 jobs:

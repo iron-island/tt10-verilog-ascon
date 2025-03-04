@@ -1,5 +1,16 @@
 name: test
-on: [push, workflow_dispatch]
+on:
+  push:
+    # Exclude unrelated file changes from triggering workflow
+    # Ref: https://stackoverflow.com/questions/69557828/stop-triggering-github-actions-on-updating-some-files-in-repository
+    paths-ignore:
+      - README.md
+      - info.yaml
+      - docs/*
+      - .github/workflows/gds.yaml
+      - .github/workflows/docs.yaml
+  workflow_dispatch:
+
 jobs:
   test:
     runs-on: ubuntu-24.04
