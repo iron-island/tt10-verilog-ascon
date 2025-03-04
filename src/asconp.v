@@ -9,30 +9,24 @@ module asconp(
     input wire [63:0] S_4_load_val,
 
     input wire load_val,
-    input wire rounds_enable,
 
+    input wire [3:0] num_rounds,
+    input wire rounds_enable,
     input wire [3:0] round_ctr,
 
     output reg [63:0] S_0_reg,
     output reg [63:0] S_1_reg,
     output reg [63:0] S_2_reg,
     output reg [63:0] S_3_reg,
-    output reg [63:0] S_4_reg,
-
-    output reg rounds_done
+    output reg [63:0] S_4_reg
 );
 
-    parameter NUM_ROUNDS = 12;
-
     // State registers
-
     reg [63:0] S_0_L;
     reg [63:0] S_1_L;
     reg [63:0] S_2_L;
     reg [63:0] S_3_L;
     reg [63:0] S_4_L;
-
-    assign rounds_done = (round_ctr == NUM_ROUNDS);
 
     always@(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -47,7 +41,7 @@ module asconp(
             S_2_reg <= S_2_load_val;
             S_3_reg <= S_3_load_val;
             S_4_reg <= S_4_load_val;
-        end else if ((rounds_enable) && (round_ctr < NUM_ROUNDS)) begin
+        end else if ((rounds_enable) && (round_ctr < num_rounds)) begin
             S_0_reg <= S_0_L;
             S_1_reg <= S_1_L;
             S_2_reg <= S_2_L;
@@ -77,7 +71,7 @@ module asconp(
     // TODO: Optimize index computation by computing outside asconp 
     // Index used for LUT constants
     wire [3:0] index;
-    assign index = 16-NUM_ROUNDS+round_ctr;
+    assign index = 4'd16-num_rounds+round_ctr;
 
     always@(*) begin
         S_0_C = S_0_reg;

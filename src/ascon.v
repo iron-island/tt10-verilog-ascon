@@ -77,8 +77,9 @@ module ascon(
 
     // State transition logic
     reg load_val;
-    reg rounds_enable;
 
+    reg [3:0] num_rounds;
+    reg rounds_enable;
     reg [3:0] round_ctr;
 
     reg [2:0] post_init_state;
@@ -91,7 +92,7 @@ module ascon(
     assign decr_ascon_counter = ascon_counter_done ? 'd0 : (ascon_counter - 'd1);
 
     // TODO: optimize round_ctr
-    // TODO: generate rounds_enable based on round_ctr
+    // TODO: generate rounds_enable based on round_ctr,
     always@(*) begin
         // Default values, more readable to put here
         //   than on repeated else statements on each case
@@ -109,6 +110,8 @@ module ascon(
 
         // Control signals
         load_val      = 1'b0;
+
+        num_rounds    = 4'd12;
         rounds_enable = 1'b0;
 
         round_ctr = 4'd0;
@@ -137,7 +140,7 @@ module ascon(
                 if (ascon_counter_done) begin
                     next_ascon_state = post_init_state;
 
-                    next_ascon_counter = 4'd11;
+                    next_ascon_counter = 4'd10;
 
                     load_val = 1'b1;
 
@@ -158,10 +161,43 @@ module ascon(
                 end
             end
             `DATA_PROC_STATE : begin
+                num_rounds = 4'd8;
+
                 if (ascon_counter_done) begin
                     next_ascon_state = `TEXT_PROC_STATE;
 
-                    next_ascon_counter = 4'd11;
+                    next_ascon_counter = 4'd10;
+
+                    load_val = 1'b1;
+
+                    // Update XOR inputs
+                    xor_128b_in0 = {S_3_reg, S_4_reg};
+                    xor_128b_in1 = 128'd1;
+
+                    // Load output values of associated data phase
+                    S_0_load_val = S_0_reg;
+                    S_1_load_val = S_1_reg;
+                    S_2_load_val = S_2_reg;
+                    S_3_load_val = S_3_reg;
+                    S_4_load_val = {S_4_reg[63:1], xor_128b_out[0]};
+                end else if (ascon_counter == 'd10) begin
+                    load_val = 1'b1;
+
+                    // Update XOR inputs
+                    xor_128b_in0 = {S_0_reg, S_1_reg};
+                    xor_128b_in1 = reg2_128b;
+
+                    // Load input values of associated data processing phase
+                    S_0_load_val = xor_128b_out[127:64];
+                    S_1_load_val = xor_128b_out[63:0];
+                    S_2_load_val = S_2_reg;
+                    S_3_load_val = S_3_reg;
+                    S_4_load_val = S_4_reg;
+                end else begin
+                    rounds_enable = 1'b1;
+
+                    // TODO: check
+                    round_ctr = (4'd9 - ascon_counter);
                 end
             end
             `TEXT_PROC_STATE : begin
@@ -275,10 +311,7 @@ module ascon(
     end
 
     // Instantiate permutations
-    // TODO: Make num_rounds an input instead of a parameter
-    asconp #(
-        .NUM_ROUNDS(12)
-    ) u_asconp(
+    asconp u_asconp(
         .clk      (clk),
         .rst_n    (rst_n),
 
@@ -289,8 +322,10 @@ module ascon(
         .S_4_load_val (S_4_load_val),
 
         .load_val (load_val),
+
+        .num_rounds   (num_rounds),
         .rounds_enable(rounds_enable),
-        .round_ctr(round_ctr),
+        .round_ctr    (round_ctr),
 
         .S_0_reg  (S_0_reg),
         .S_1_reg  (S_1_reg),
