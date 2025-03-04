@@ -2,13 +2,13 @@ module asconp(
     input wire clk,
     input wire rst_n,
 
-    input wire [63:0] S_0_init,
-    input wire [63:0] S_1_init,
-    input wire [63:0] S_2_init,
-    input wire [63:0] S_3_init,
-    input wire [63:0] S_4_init,
+    input wire [63:0] S_0_load_val,
+    input wire [63:0] S_1_load_val,
+    input wire [63:0] S_2_load_val,
+    input wire [63:0] S_3_load_val,
+    input wire [63:0] S_4_load_val,
 
-    input wire load_init_val,
+    input wire load_val,
     input wire rounds_enable,
 
     input wire [3:0] round_ctr,
@@ -41,12 +41,12 @@ module asconp(
             S_2_reg <= 64'd0;
             S_3_reg <= 64'd0;
             S_4_reg <= 64'd0;
-        end else if (load_init_val) begin
-            S_0_reg <= S_0_init;
-            S_1_reg <= S_1_init;
-            S_2_reg <= S_2_init;
-            S_3_reg <= S_3_init;
-            S_4_reg <= S_4_init;
+        end else if (load_val) begin
+            S_0_reg <= S_0_load_val;
+            S_1_reg <= S_1_load_val;
+            S_2_reg <= S_2_load_val;
+            S_3_reg <= S_3_load_val;
+            S_4_reg <= S_4_load_val;
         end else if ((rounds_enable) && (round_ctr < NUM_ROUNDS)) begin
             S_0_reg <= S_0_L;
             S_1_reg <= S_1_L;
