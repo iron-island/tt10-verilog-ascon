@@ -10,6 +10,11 @@ WR_REG0_COMMAND    = 0b00000
 WR_REG1_COMMAND    = 0b00001
 WR_REG2_COMMAND    = 0b00010
 WR_OP_MODE_COMMAND = 0b00011
+WR_S_0_COMMAND     = 0b00100
+WR_S_1_COMMAND     = 0b00101
+WR_S_2_COMMAND     = 0b00110
+WR_S_3_COMMAND     = 0b00111
+WR_S_4_COMMAND     = 0b01000
 RD_REG0_COMMAND    = 0b10000
 RD_REG1_COMMAND    = 0b10001
 RD_REG2_COMMAND    = 0b10010
@@ -74,7 +79,12 @@ async def spi_wr_reg(dut, command, data, add_cycles=0):
         temp = update_bit(dut.uio_in.value, 0, 3)
 
     # Drive MOSI for data
-    for bit in range(127, -1, -1):
+    if (command in [WR_REG0_COMMAND, WR_REG1_COMMAND, WR_REG2_COMMAND]):
+        num_bits = 127
+    else:
+        num_bits = 63
+
+    for bit in range(num_bits, -1, -1):
         # Drive MOSI
         dut.uio_in.value = update_bit(temp, get_reg_bit(data, bit), 1)
 
@@ -246,8 +256,13 @@ async def test_project(dut):
     #x2=1120821ab7ef5039
     #x3=0288f6cd3f44a4c2
     #x4=122103181031374d
+    # Key
     await spi_wr_reg(dut, WR_REG0_COMMAND, 0xf23494a4b1f09f721120821ab7ef5039, 1)
-    await spi_wr_reg(dut, WR_REG1_COMMAND, 0x0288f6cd3f44a4c2122103181031374d, 1)
+    # Nonce
+    #await spi_wr_reg(dut, WR_REG1_COMMAND, 0x0288f6cd3f44a4c2122103181031374d, 1)
+    await spi_wr_reg(dut, WR_S_3_COMMAND,  0x0288f6cd3f44a4c2, 1)
+    await spi_wr_reg(dut, WR_S_4_COMMAND,  0x122103181031374d, 1)
+    # Associated data
     await spi_wr_reg(dut, WR_REG2_COMMAND, 0x0000014e4f4353410000000000000000, 1)
 
     await spi_wr_mode(dut, ENCRYPT_MODE, 10)
