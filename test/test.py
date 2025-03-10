@@ -53,7 +53,7 @@ async def spi_wr_reg(dut, command, data, add_cycles=0):
     dut.uio_in.value = 0b00000000
 
     # Wait for 1 clock cycle delay
-    await ClockCycles(dut.clk, 1)
+    await ClockCycles(dut.clk, 2)
     temp = dut.uio_in.value
 
     # Drive MOSI for command
@@ -62,13 +62,13 @@ async def spi_wr_reg(dut, command, data, add_cycles=0):
         dut.uio_in.value = update_bit(temp, get_reg_bit(command, bit), 1)
 
         # Wait for 1 clock cycle delay
-        await ClockCycles(dut.clk, 1)
+        await ClockCycles(dut.clk, 2)
 
         # Drive SCK posedge
         dut.uio_in.value = update_bit(dut.uio_in.value, 1, 3)
 
         # Wait for 1 clock cycle delay
-        await ClockCycles(dut.clk, 1)
+        await ClockCycles(dut.clk, 2)
 
         # Drive SCK negedge
         temp = update_bit(dut.uio_in.value, 0, 3)
@@ -79,13 +79,13 @@ async def spi_wr_reg(dut, command, data, add_cycles=0):
         dut.uio_in.value = update_bit(temp, get_reg_bit(data, bit), 1)
 
         # Wait for 1 clock cycle delay
-        await ClockCycles(dut.clk, 1)
+        await ClockCycles(dut.clk, 2)
 
         # Drive SCK posedge
         dut.uio_in.value = update_bit(dut.uio_in.value, 1, 3)
 
         # Wait for 1 clock cycle delay
-        await ClockCycles(dut.clk, 1)
+        await ClockCycles(dut.clk, 2)
 
         # Drive SCK negedge
         temp = update_bit(dut.uio_in.value, 0, 3)
@@ -93,13 +93,13 @@ async def spi_wr_reg(dut, command, data, add_cycles=0):
     dut.uio_in.value = temp
 
     # Wait for 1 clock cycle delay
-    await ClockCycles(dut.clk, 1)
+    await ClockCycles(dut.clk, 2)
 
     # Drive CSB high
     dut.uio_in.value = update_bit(dut.uio_in.value, 1, 0)
 
     # Wait for 1+add_cycles clock cycle delay
-    await ClockCycles(dut.clk, 1+add_cycles)
+    await ClockCycles(dut.clk, 2+add_cycles)
 
 async def spi_wr_mode(dut, mode, add_cycles=0):
     # Print to log
@@ -110,7 +110,7 @@ async def spi_wr_mode(dut, mode, add_cycles=0):
     dut.uio_in.value = 0b00000000
 
     # Wait for 1 clock cycle delay
-    await ClockCycles(dut.clk, 1)
+    await ClockCycles(dut.clk, 2)
     temp = dut.uio_in.value
 
     # Drive MOSI for command
@@ -119,13 +119,13 @@ async def spi_wr_mode(dut, mode, add_cycles=0):
         dut.uio_in.value = update_bit(temp, get_reg_bit(command, bit), 1)
 
         # Wait for 1 clock cycle delay
-        await ClockCycles(dut.clk, 1)
+        await ClockCycles(dut.clk, 2)
 
         # Drive SCK posedge
         dut.uio_in.value = update_bit(dut.uio_in.value, 1, 3)
 
         # Wait for 1 clock cycle delay
-        await ClockCycles(dut.clk, 1)
+        await ClockCycles(dut.clk, 2)
 
         # Drive SCK negedge
         temp = update_bit(dut.uio_in.value, 0, 3)
@@ -136,13 +136,13 @@ async def spi_wr_mode(dut, mode, add_cycles=0):
         dut.uio_in.value = update_bit(temp, get_reg_bit(mode, bit), 1)
 
         # Wait for 1 clock cycle delay
-        await ClockCycles(dut.clk, 1)
+        await ClockCycles(dut.clk, 2)
 
         # Drive SCK posedge
         dut.uio_in.value = update_bit(dut.uio_in.value, 1, 3)
 
         # Wait for 1 clock cycle delay
-        await ClockCycles(dut.clk, 1)
+        await ClockCycles(dut.clk, 2)
 
         # Drive SCK negedge
         temp = update_bit(dut.uio_in.value, 0, 3)
@@ -150,13 +150,13 @@ async def spi_wr_mode(dut, mode, add_cycles=0):
     dut.uio_in.value = temp
 
     # Wait for 1 clock cycle delay
-    await ClockCycles(dut.clk, 1)
+    await ClockCycles(dut.clk, 2)
 
     # Drive CSB high
     dut.uio_in.value = update_bit(dut.uio_in.value, 1, 0)
 
     # Wait for 1+add_cycles clock cycle delay
-    await ClockCycles(dut.clk, 1+add_cycles)
+    await ClockCycles(dut.clk, 2+add_cycles)
 
 async def spi_read(dut, command, add_cycles=0):
     # Print to log
@@ -166,7 +166,7 @@ async def spi_read(dut, command, add_cycles=0):
     dut.uio_in.value = 0b00000000
 
     # Wait for 1 clock cycle delay
-    await ClockCycles(dut.clk, 1)
+    await ClockCycles(dut.clk, 2)
     temp = dut.uio_in.value
 
     # Drive MOSI for command
@@ -175,13 +175,13 @@ async def spi_read(dut, command, add_cycles=0):
         dut.uio_in.value = update_bit(temp, get_reg_bit(command, bit), 1)
 
         # Wait for 1 clock cycle delay
-        await ClockCycles(dut.clk, 1)
+        await ClockCycles(dut.clk, 2)
 
         # Drive SCK posedge
         dut.uio_in.value = update_bit(dut.uio_in.value, 1, 3)
 
         # Wait for 1 clock cycle delay
-        await ClockCycles(dut.clk, 1)
+        await ClockCycles(dut.clk, 2)
 
         # Drive SCK negedge
         temp = update_bit(dut.uio_in.value, 0, 3)
@@ -192,13 +192,13 @@ async def spi_read(dut, command, add_cycles=0):
         dut.uio_in.value = temp
 
         # Wait for 1 clock cycle delay
-        await ClockCycles(dut.clk, 1)
+        await ClockCycles(dut.clk, 2)
 
         # Drive SCK posedge
         dut.uio_in.value = update_bit(dut.uio_in.value, 1, 3)
 
         # Wait for 1 clock cycle delay
-        await ClockCycles(dut.clk, 1)
+        await ClockCycles(dut.clk, 2)
 
         # Drive SCK negedge
         temp = update_bit(dut.uio_in.value, 0, 3)
@@ -206,13 +206,13 @@ async def spi_read(dut, command, add_cycles=0):
     dut.uio_in.value = temp
 
     # Wait for 1 clock cycle delay
-    await ClockCycles(dut.clk, 1)
+    await ClockCycles(dut.clk, 2)
 
     # Drive CSB high
     dut.uio_in.value = update_bit(dut.uio_in.value, 1, 0)
 
     # Wait for 1+add_cycles clock cycle delay
-    await ClockCycles(dut.clk, 1+add_cycles)
+    await ClockCycles(dut.clk, 2+add_cycles)
 
 @cocotb.test()
 async def test_project(dut):
