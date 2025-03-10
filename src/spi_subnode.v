@@ -155,6 +155,7 @@ module spi_subnode(
     assign state_shift_lsb = mosi; // just for renaming
 
     always@(*) begin
+        state_shift_en_spi = 1'b0;
         state_shift_sel    = 3'b000;
 
         case (curr_state)
