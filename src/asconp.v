@@ -42,13 +42,11 @@ module asconp(
         end else if (state_shift_en) begin
             // Shift in LSB to state registers through a peripheral such as
             // SPI
-            case (state_shift_sel)
-                3'b000 : S_0_reg <= {S_0_reg[126:0], state_shift_lsb};
-                3'b001 : S_1_reg <= {S_1_reg[126:0], state_shift_lsb};
-                3'b010 : S_2_reg <= {S_2_reg[126:0], state_shift_lsb};
-                3'b011 : S_3_reg <= {S_3_reg[126:0], state_shift_lsb};
-                3'b100 : S_4_reg <= {S_4_reg[126:0], state_shift_lsb};
-            endcase
+            S_0_reg <= (state_shift_sel == 3'b000) ? {S_0_reg[126:0], state_shift_lsb} : S_0_reg;
+            S_1_reg <= (state_shift_sel == 3'b001) ? {S_1_reg[126:0], state_shift_lsb} : S_1_reg;
+            S_2_reg <= (state_shift_sel == 3'b010) ? {S_2_reg[126:0], state_shift_lsb} : S_2_reg;
+            S_3_reg <= (state_shift_sel == 3'b011) ? {S_3_reg[126:0], state_shift_lsb} : S_3_reg;
+            S_4_reg <= (state_shift_sel == 3'b100) ? {S_4_reg[126:0], state_shift_lsb} : S_4_reg;
         end else if (load_val) begin
             // Load values to state registers through Ascon controller
             S_0_reg <= S_0_load_val;
