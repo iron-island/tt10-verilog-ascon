@@ -166,20 +166,20 @@ module ascon(
                 if (ascon_counter_done) begin
                     next_ascon_state = `TEXT_PROC_STATE;
 
-                    next_ascon_counter = 4'd10;
+                    next_ascon_counter = 4'd9;
 
                     load_val = 1'b1;
 
                     // Update XOR inputs
                     xor_128b_in0 = {S_3_reg, S_4_reg};
-                    xor_128b_in1 = 128'd1;
+                    xor_128b_in1 = {64'd0, 1'd1, 63'd0};
 
                     // Load output values of associated data phase
                     S_0_load_val = S_0_reg;
                     S_1_load_val = S_1_reg;
                     S_2_load_val = S_2_reg;
                     S_3_load_val = S_3_reg;
-                    S_4_load_val = {S_4_reg[63:1], xor_128b_out[0]};
+                    S_4_load_val = xor_128b_out;
                 end else if (ascon_counter == 'd9) begin
                     load_val = 1'b1;
 
@@ -201,10 +201,32 @@ module ascon(
                 end
             end
             `TEXT_PROC_STATE : begin
+                num_rounds = 4'd8;
+
                 if (ascon_counter_done) begin
                     next_ascon_state = `FINAL_STATE;
 
                     next_ascon_counter = 4'd11;
+                end else if (ascon_counter == 'd9) begin
+                    load_val = 1'b1;
+
+                    // Update XOR inputs
+                    xor_128b_in0 = {S_0_reg, S_1_reg};
+                    xor_128b_in1 = reg1_128b;
+
+                    // Load input values of plaintext processing phase
+                    S_0_load_val = xor_128b_out[127:64];
+                    S_1_load_val = xor_128b_out[63:0];
+                    S_2_load_val = S_2_reg;
+                    S_3_load_val = S_3_reg;
+                    S_4_load_val = S_4_reg;
+
+                    // TODO: Output ciphertext and load to input/output registers
+                end else begin
+                    rounds_enable = 1'b1;
+
+                    // TODO: check
+                    round_ctr = (4'd8 - ascon_counter);
                 end
             end
             `FINAL_STATE   : begin
