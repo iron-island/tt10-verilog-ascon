@@ -5,12 +5,11 @@
 `define WR_REG1_COMMAND    5'b00001
 `define WR_REG2_COMMAND    5'b00010
 `define WR_OP_MODE_COMMAND 5'b00011
-// TODO: Add writing to state registers?
-//`define WR_S_0_COMMAND     5'b00100
-//`define WR_S_1_COMMAND     5'b00101
-//`define WR_S_2_COMMAND     5'b00110
-//`define WR_S_3_COMMAND     5'b00111
-//`define WR_S_4_COMMAND     5'b01000
+`define WR_S_0_COMMAND     5'b00100
+`define WR_S_1_COMMAND     5'b00101
+`define WR_S_2_COMMAND     5'b00110
+`define WR_S_3_COMMAND     5'b00111
+`define WR_S_4_COMMAND     5'b01000
 `define RD_REG0_COMMAND    5'b10000
 `define RD_REG1_COMMAND    5'b10001
 `define RD_REG2_COMMAND    5'b10010
@@ -45,6 +44,10 @@ module spi_subnode(
 
     output reg [2:0] operation_mode,
     output reg       operation_ready,
+
+    output reg state_shift_en,
+    output reg [2:0] state_shift_sel,
+    output reg state_shift_lsb,
 
     input wire [63:0] S_0_reg,
     input wire [63:0] S_1_reg,
@@ -142,10 +145,18 @@ module spi_subnode(
     // FSM
     reg [6:0] decr_counter;
 
+    reg       state_shift_en_spi;
+
     assign counter_done = (counter == 'd0);
     assign decr_counter = (counter - 'd1);
 
+    // state_shift_en should be a write strobe so gate state_shift_en_spi with sck_rise
+    assign state_shift_en  = (state_shift_en_spi & sck_rise);
+    assign state_shift_lsb = mosi; // just for renaming
+
     always@(*) begin
+        state_shift_sel    = 3'b000;
+
         case (curr_state)
             `INPUT_COMMAND_STATE : begin
                 // Constant output
@@ -157,6 +168,11 @@ module spi_subnode(
                         `WR_REG1_COMMAND    : begin next_counter = 'd127;   next_state = `INPUT_DATA_STATE;  end
                         `WR_REG2_COMMAND    : begin next_counter = 'd127;   next_state = `INPUT_DATA_STATE;  end
                         `WR_OP_MODE_COMMAND : begin next_counter = 'd2;     next_state = `INPUT_MODE_STATE;  end
+                        `WR_S_0_COMMAND     : begin next_counter = 'd63;    next_state = `INPUT_DATA_STATE;  end
+                        `WR_S_1_COMMAND     : begin next_counter = 'd63;    next_state = `INPUT_DATA_STATE;  end
+                        `WR_S_2_COMMAND     : begin next_counter = 'd63;    next_state = `INPUT_DATA_STATE;  end
+                        `WR_S_3_COMMAND     : begin next_counter = 'd63;    next_state = `INPUT_DATA_STATE;  end
+                        `WR_S_4_COMMAND     : begin next_counter = 'd63;    next_state = `INPUT_DATA_STATE;  end
                         `RD_REG0_COMMAND    : begin next_counter = 'd127;   next_state = `OUTPUT_DATA_STATE; end
                         `RD_REG1_COMMAND    : begin next_counter = 'd127;   next_state = `OUTPUT_DATA_STATE; end 
                         `RD_REG2_COMMAND    : begin next_counter = 'd127;   next_state = `OUTPUT_DATA_STATE; end 
@@ -184,6 +200,20 @@ module spi_subnode(
                     next_state   = curr_state;
                     next_counter = decr_counter;
                 end
+
+                // TODO: optimize, can be simplified to only use
+                //       state_shift_sel and have bit encoding of WR_S_*_COMMAND be
+                //       the same as state_shift_sel
+                case (command)
+                    `WR_S_0_COMMAND : begin state_shift_en_spi = 1'b1; state_shift_sel = 3'b000; end
+                    `WR_S_1_COMMAND : begin state_shift_en_spi = 1'b1; state_shift_sel = 3'b001; end
+                    `WR_S_2_COMMAND : begin state_shift_en_spi = 1'b1; state_shift_sel = 3'b010; end
+                    `WR_S_3_COMMAND : begin state_shift_en_spi = 1'b1; state_shift_sel = 3'b011; end
+                    `WR_S_4_COMMAND : begin state_shift_en_spi = 1'b1; state_shift_sel = 3'b100; end
+                    // default case should not be possible,
+                    //   only used for linting
+                    default         : begin state_shift_en_spi = 1'b0; state_shift_sel = 3'b000; end
+                endcase
             end
             `INPUT_MODE_STATE : begin
                 // Constant output

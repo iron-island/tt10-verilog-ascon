@@ -28,6 +28,10 @@ module ascon(
     input wire [2:0] operation_mode,
     input wire       operation_ready,
 
+    input wire state_shift_en,
+    input wire [2:0] state_shift_sel,
+    input wire state_shift_lsb,
+
     output reg [63:0] S_0_reg,
     output reg [63:0] S_1_reg,
     output reg [63:0] S_2_reg,
@@ -288,8 +292,11 @@ module ascon(
                 S_0_init = 64'h00001000808c0001;
                 S_1_init = reg0_128b[127:64];
                 S_2_init = reg0_128b[63:0];
-                S_3_init = reg1_128b[127:64];
-                S_4_init = reg1_128b[63:0];
+                // S_3 and S_4 aren't changed since it is assumed that
+                //   the nonce has already been written directly to
+                //   S_3_reg and S_4_reg via SPI
+                S_3_init = S_3_reg;
+                S_4_init = S_4_reg;
 
                 post_init_state = `DATA_PROC_STATE;
             end
@@ -336,6 +343,10 @@ module ascon(
     asconp u_asconp(
         .clk      (clk),
         .rst_n    (rst_n),
+
+        .state_shift_en  (state_shift_en),
+        .state_shift_sel (state_shift_sel),
+        .state_shift_lsb (state_shift_lsb),
 
         .S_0_load_val (S_0_load_val),
         .S_1_load_val (S_1_load_val),

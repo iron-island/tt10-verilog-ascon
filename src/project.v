@@ -38,6 +38,10 @@ module tt_um_ascon_ironisland_top (
     wire [2:0] operation_mode;
     wire       operation_ready;
 
+    wire       state_shift_en;
+    wire [2:0] state_shift_sel;
+    wire       state_shift_lsb;
+
     // SPI
     wire csb;
     wire mosi;
@@ -79,6 +83,10 @@ module tt_um_ascon_ironisland_top (
 
         .operation_mode (operation_mode),
         .operation_ready(operation_ready),
+
+        .state_shift_en  (state_shift_en),
+        .state_shift_sel (state_shift_sel),
+        .state_shift_lsb (state_shift_lsb),
 
         .S_0_reg  (S_0_reg),
         .S_1_reg  (S_1_reg),
@@ -134,6 +142,10 @@ module tt_um_ascon_ironisland_top (
 
         .operation_mode (operation_mode),
         .operation_ready(operation_ready),
+
+        .state_shift_en  (state_shift_en),
+        .state_shift_sel (state_shift_sel),
+        .state_shift_lsb (state_shift_lsb),
 
         .S_0_reg  (S_0_reg),
         .S_1_reg  (S_1_reg),
