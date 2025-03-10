@@ -30,6 +30,7 @@
 `define IDLE_SPI_STATE      3'b101
 
 module spi_subnode(
+    input wire clk,
     input wire rst_n,
 
     input wire sck,
@@ -57,6 +58,32 @@ module spi_subnode(
    
     assign spi_rst_n = (rst_n & !csb);
 
+    // SCK and CSB edge detectors
+    reg sck_delay;
+    reg csb_delay;
+
+    reg sck_rise;
+    reg sck_fall;
+    reg csb_rise;
+    reg csb_fall;
+
+    assign sck_rise = (sck & !sck_delay);
+    assign csb_rise = (csb & !csb_delay);
+
+    assign sck_fall = (!sck & sck_delay);
+    assign csb_fall = (!csb & csb_delay);
+
+    always@(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            sck_delay <= 1'b0;
+            csb_delay <= 1'b0;
+        end else begin
+            sck_delay <= sck;
+            csb_delay <= csb;
+        end
+    end
+
+    // SPI subnode control signals
     reg [2:0] curr_state;
     reg [2:0] next_state;
     reg [4:0] command;
@@ -70,14 +97,14 @@ module spi_subnode(
 
     assign next_command = {command[3:0], mosi};
 
-    always@(posedge sck or negedge spi_rst_n) begin
+    always@(posedge clk or negedge spi_rst_n) begin
         if (!spi_rst_n) begin
             curr_state <= 3'd0;
             command    <= 5'd0;
             counter    <= 7'd4; // reset counter value to (no. of bits of command)-1
             
             miso <= 1'b1;
-        end else if (csb == 1'b0) begin
+        end else if ((csb == 1'b0) && (sck_rise)) begin
             curr_state <= next_state;
             command    <= (curr_state == `INPUT_COMMAND_STATE) ? next_command : command;
             counter    <= next_counter;
@@ -87,7 +114,7 @@ module spi_subnode(
     end
 
     // Input/output registers
-    always@(posedge sck or negedge rst_n) begin
+    always@(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             reg0_128b <= 128'd0;
             reg1_128b <= 128'd0;
@@ -95,17 +122,19 @@ module spi_subnode(
 
             operation_mode  <= 3'b000;
             operation_ready <= 1'b0;
-        end else if (curr_state == `INPUT_DATA_STATE) begin
-            reg0_128b <= (command == `WR_REG0_COMMAND) ? {reg0_128b[126:0], mosi} : reg0_128b;
-            reg1_128b <= (command == `WR_REG1_COMMAND) ? {reg1_128b[126:0], mosi} : reg1_128b;
-            reg2_128b <= (command == `WR_REG2_COMMAND) ? {reg2_128b[126:0], mosi} : reg2_128b;
-        end else if (curr_state == `INPUT_MODE_STATE) begin
-            operation_mode <= {operation_mode[1:0], mosi};
+        end else if (sck_rise) begin
+            if (curr_state == `INPUT_DATA_STATE) begin
+                reg0_128b <= (command == `WR_REG0_COMMAND) ? {reg0_128b[126:0], mosi} : reg0_128b;
+                reg1_128b <= (command == `WR_REG1_COMMAND) ? {reg1_128b[126:0], mosi} : reg1_128b;
+                reg2_128b <= (command == `WR_REG2_COMMAND) ? {reg2_128b[126:0], mosi} : reg2_128b;
+            end else if (curr_state == `INPUT_MODE_STATE) begin
+                operation_mode <= {operation_mode[1:0], mosi};
 
-            if (counter_done) begin
-                operation_ready <= 1'b1;
-            end else begin
-                operation_ready <= 1'b0;
+                if (counter_done) begin
+                    operation_ready <= 1'b1;
+                end else begin
+                    operation_ready <= 1'b0;
+                end
             end
         end
     end

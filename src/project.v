@@ -6,6 +6,7 @@
 `default_nettype none
 
 // TODO: Put inside .f file instead
+`include "./sync_2ff.v"
 `include "./spi_subnode.v"
 `include "./asconp.v"
 `include "./ascon.v"
@@ -47,6 +48,11 @@ module tt_um_ascon_ironisland_top (
     assign mosi = uio_in[1];
     assign sck  = uio_in[3];
 
+    // Synchronized SPI signals
+    wire csb_sync;
+    wire mosi_sync;
+    wire sck_sync;
+
     // TODO
     // All output pins must be assigned. If not used, assign to 0.
     assign uo_out  = 8'd0;
@@ -81,13 +87,44 @@ module tt_um_ascon_ironisland_top (
         .S_4_reg  (S_4_reg)
     );
 
-    // Instantiate SPI subnode
-    spi_subnode u_spi(
+    // Instantiate synchronizers, so that SPI subnode runs on clk domain
+    //   so that both the SPI subnode and the Ascon HW accelerator can
+    //   read/write freely to the general purpose 128-bit registers reg*_128b
+    // Ref: https://github.com/mattvenn/tt10-spi-test/blob/main/src/tt_um_mattvenn_spi_test.v
+    sync_2ff u_sck_sync_2ff(
+        .data_in  (sck),
+        .clk_sync (clk),
         .rst_n    (rst_n),
 
-        .sck      (sck),
-        .csb      (csb),
-        .mosi     (mosi),
+        .data_sync_out (sck_sync)
+    );
+
+    sync_2ff #(
+        .RESET_VAL (1'b1)  
+    ) u_csb_sync_2ff(
+        .data_in  (csb),
+        .clk_sync (clk),
+        .rst_n    (rst_n),
+
+        .data_sync_out (csb_sync)
+    );
+
+    sync_2ff u_mosi_sync_2ff(
+        .data_in  (mosi),
+        .clk_sync (clk),
+        .rst_n    (rst_n),
+
+        .data_sync_out (mosi_sync)
+    );
+
+    // Instantiate SPI subnode
+    spi_subnode u_spi(
+        .clk      (clk),
+        .rst_n    (rst_n),
+
+        .sck      (sck_sync),
+        .csb      (csb_sync),
+        .mosi     (mosi_sync),
 
         .miso     (miso),
 
