@@ -45,6 +45,8 @@ module spi_subnode(
     input wire [1:0]   reg_128b_wrback_sel,
     input wire [127:0] reg_128b_wrback_val,
 
+    input wire operation_done,
+
     output reg miso,
 
     output reg [127:0] reg0_128b,
@@ -131,9 +133,6 @@ module spi_subnode(
             reg0_128b <= 128'd0;
             reg1_128b <= 128'd0;
             reg2_128b <= 128'd0;
-
-            operation_mode  <= 3'b000;
-            operation_ready <= 1'b0;
         end else if (reg_128b_wrback_en) begin
             reg0_128b <= (reg_128b_wrback_sel == `REG0_WRBACK_SEL) ? reg_128b_wrback_val : reg0_128b;
             reg1_128b <= (reg_128b_wrback_sel == `REG1_WRBACK_SEL) ? reg_128b_wrback_val : reg1_128b;
@@ -143,14 +142,22 @@ module spi_subnode(
                 reg0_128b <= (command == `WR_REG0_COMMAND) ? {reg0_128b[126:0], mosi} : reg0_128b;
                 reg1_128b <= (command == `WR_REG1_COMMAND) ? {reg1_128b[126:0], mosi} : reg1_128b;
                 reg2_128b <= (command == `WR_REG2_COMMAND) ? {reg2_128b[126:0], mosi} : reg2_128b;
-            end else if (curr_state == `INPUT_MODE_STATE) begin
+            end
+        end
+    end
+
+    // Operation control registers
+    always@(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            operation_mode  <= 3'b000;
+            operation_ready <= 1'b0;
+        end if (operation_done) begin
+            operation_ready <= 1'b0;
+        end else if (sck_rise) begin
+            if (curr_state == `INPUT_MODE_STATE) begin
                 operation_mode <= {operation_mode[1:0], mosi};
 
-                if (counter_done) begin
-                    operation_ready <= 1'b1;
-                end else begin
-                    operation_ready <= 1'b0;
-                end
+                operation_ready <= (counter_done) ? 1'b1 : 1'b0;
             end
         end
     end

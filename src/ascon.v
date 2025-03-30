@@ -40,7 +40,9 @@ module ascon(
 
     output reg         reg_128b_wrback_en,
     output reg [1:0]   reg_128b_wrback_sel,
-    output reg [127:0] reg_128b_wrback_val
+    output reg [127:0] reg_128b_wrback_val,
+
+    output reg operation_done
 );
 
     // 128-bit XOR
@@ -132,6 +134,8 @@ module ascon(
         next_ascon_state = ascon_state;
 
         next_ascon_counter = decr_ascon_counter;
+
+        operation_done = 1'b0;
 
         case (ascon_state)
             `IDLE_STATE      : begin
@@ -242,6 +246,8 @@ module ascon(
                     next_ascon_state = `IDLE_STATE;
 
                     next_ascon_counter = 4'd11;
+
+                    operation_done = 1'b1;
 
                     // Update XOR inputs
                     xor_128b_in0 = {S_3_reg, S_4_reg};

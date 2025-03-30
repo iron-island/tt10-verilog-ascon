@@ -37,6 +37,7 @@ module tt_um_ascon_ironisland_top (
     // Control signals
     wire [2:0] operation_mode;
     wire       operation_ready;
+    wire       operation_done;
 
     wire       state_shift_en;
     wire [2:0] state_shift_sel;
@@ -101,7 +102,9 @@ module tt_um_ascon_ironisland_top (
 
         .reg_128b_wrback_en  (reg_128b_wrback_en),
         .reg_128b_wrback_sel (reg_128b_wrback_sel),
-        .reg_128b_wrback_val (reg_128b_wrback_val)
+        .reg_128b_wrback_val (reg_128b_wrback_val),
+
+        .operation_done(operation_done)
     );
 
     // Instantiate synchronizers, so that SPI subnode runs on clk domain
@@ -146,6 +149,8 @@ module tt_um_ascon_ironisland_top (
         .reg_128b_wrback_en  (reg_128b_wrback_en),
         .reg_128b_wrback_sel (reg_128b_wrback_sel),
         .reg_128b_wrback_val (reg_128b_wrback_val),
+
+        .operation_done(operation_done),
 
         .miso     (miso),
 
