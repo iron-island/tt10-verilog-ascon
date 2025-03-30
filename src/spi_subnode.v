@@ -28,6 +28,11 @@
 `define OUTPUT_MODE_STATE   3'b100
 `define IDLE_SPI_STATE      3'b101
 
+// Writeback register select
+`define REG0_WRBACK_SEL 2'b00
+`define REG1_WRBACK_SEL 2'b01
+`define REG2_WRBACK_SEL 2'b10
+
 module spi_subnode(
     input wire clk,
     input wire rst_n,
@@ -35,6 +40,10 @@ module spi_subnode(
     input wire sck,
     input wire csb,
     input wire mosi,
+
+    input wire         reg_128b_wrback_en,
+    input wire [1:0]   reg_128b_wrback_sel,
+    input wire [127:0] reg_128b_wrback_val,
 
     output reg miso,
 
@@ -125,6 +134,10 @@ module spi_subnode(
 
             operation_mode  <= 3'b000;
             operation_ready <= 1'b0;
+        end else if (reg_128b_wrback_en) begin
+            reg0_128b <= (reg_128b_wrback_sel == `REG0_WRBACK_SEL) ? reg_128b_wrback_val : reg0_128b;
+            reg1_128b <= (reg_128b_wrback_sel == `REG1_WRBACK_SEL) ? reg_128b_wrback_val : reg1_128b;
+            reg2_128b <= (reg_128b_wrback_sel == `REG2_WRBACK_SEL) ? reg_128b_wrback_val : reg2_128b;
         end else if (sck_rise) begin
             if (curr_state == `INPUT_DATA_STATE) begin
                 reg0_128b <= (command == `WR_REG0_COMMAND) ? {reg0_128b[126:0], mosi} : reg0_128b;

@@ -36,7 +36,11 @@ module ascon(
     output reg [63:0] S_1_reg,
     output reg [63:0] S_2_reg,
     output reg [63:0] S_3_reg,
-    output reg [63:0] S_4_reg
+    output reg [63:0] S_4_reg,
+
+    output reg         reg_128b_wrback_en,
+    output reg [1:0]   reg_128b_wrback_sel,
+    output reg [127:0] reg_128b_wrback_val
 );
 
     // 128-bit XOR
@@ -111,6 +115,11 @@ module ascon(
         // XOR inputs
         xor_128b_in0 = 128'd0;
         xor_128b_in1 = 128'd0;
+
+        // Writeback register value signals
+        reg_128b_wrback_en  = 1'b0;
+        reg_128b_wrback_sel = `REG0_WRBACK_SEL;
+        reg_128b_wrback_val = 128'd0;
 
         // Control signals
         load_val      = 1'b0;
@@ -221,10 +230,14 @@ module ascon(
                     S_2_load_val = S_2_reg;
                     S_3_load_val = S_3_reg;
                     S_4_load_val = S_4_reg;
+
+                    // Writeback ciphertext to a register
+                    reg_128b_wrback_en  = 1'b1;
+                    reg_128b_wrback_sel = `REG1_WRBACK_SEL;
+                    reg_128b_wrback_val = xor_128b_out;
                 end
             end
             `FINAL_STATE   : begin
-                // TODO
                 if (ascon_counter_done) begin
                     next_ascon_state = `IDLE_STATE;
 
@@ -234,9 +247,11 @@ module ascon(
                     xor_128b_in0 = {S_3_reg, S_4_reg};
                     xor_128b_in1 = reg0_128b;
 
-                    // TODO
                     // Output tag won't be loaded to the state registers,
-                    //   but to an output register
+                    //   but written back to register
+                    reg_128b_wrback_en  = 1'b1;
+                    reg_128b_wrback_sel = `REG2_WRBACK_SEL;
+                    reg_128b_wrback_val = xor_128b_out;
                 end else if (ascon_counter == 4'd13) begin
                     load_val = 1'b1;
 
