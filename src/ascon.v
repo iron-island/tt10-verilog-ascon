@@ -170,7 +170,7 @@ module ascon(
                 if (ascon_counter_done) begin
                     next_ascon_state = `TEXT_PROC_STATE;
 
-                    next_ascon_counter = 4'd9;
+                    next_ascon_counter = 4'd0;
 
                     load_val = 1'b1;
 
@@ -205,13 +205,11 @@ module ascon(
                 end
             end
             `TEXT_PROC_STATE : begin
-                num_rounds = 4'd8;
-
                 if (ascon_counter_done) begin
                     next_ascon_state = `FINAL_STATE;
 
-                    next_ascon_counter = 4'd11;
-                end else if (ascon_counter == 'd9) begin
+                    next_ascon_counter = 4'd13;
+
                     load_val = 1'b1;
 
                     // Update XOR inputs
@@ -224,13 +222,6 @@ module ascon(
                     S_2_load_val = S_2_reg;
                     S_3_load_val = S_3_reg;
                     S_4_load_val = S_4_reg;
-
-                    // TODO: Output ciphertext and load to input/output registers
-                end else begin
-                    rounds_enable = 1'b1;
-
-                    // TODO: check
-                    round_ctr = (4'd8 - ascon_counter);
                 end
             end
             `FINAL_STATE   : begin
