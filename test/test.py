@@ -244,9 +244,9 @@ async def test_project(dut):
     dut.rst_n.value = 1
     await ClockCycles(dut.clk, 10)
 
-    #--------------------------#
-    # SPI Writing to Registers #
-    #--------------------------#
+    #------------#
+    # Encryption #
+    #------------#
 
     # TODO: Use randomized inputs from Python reference implementation
     #       For now, using random initial states from one run of
@@ -270,6 +270,25 @@ async def test_project(dut):
     await spi_wr_reg(dut, WR_REG2_COMMAND, 0x0000014e4f4353410000000000000000, 1)
 
     await spi_wr_mode(dut, ENCRYPT_MODE, 10)
+
+    #------------#
+    # Decryption #
+    #------------#
+
+    # Key
+    await spi_wr_reg(dut, WR_REG0_COMMAND, 0xf23494a4b1f09f721120821ab7ef5039, 1)
+    # Nonce
+    await spi_wr_reg(dut, WR_S_3_COMMAND,  0x0288f6cd3f44a4c2, 1)
+    await spi_wr_reg(dut, WR_S_4_COMMAND,  0x122103181031374d, 1)
+    # Ciphertext
+    # TODO: Use full 128-bit ciphertext, temporarily using ciphertext output from
+    #       encryption step above
+    await spi_wr_reg(dut, WR_REG1_COMMAND, 0x220af67e9dcf5444e0dfa073b4a4b687, 1)
+    # Associated data
+    # TODO: Use full 128-bit associated data
+    await spi_wr_reg(dut, WR_REG2_COMMAND, 0x0000014e4f4353410000000000000000, 1)
+
+    await spi_wr_mode(dut, DECRYPT_MODE, 10)
 
     #----------------------------#
     # SPI Reading from Registers #
