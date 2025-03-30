@@ -259,10 +259,14 @@ async def test_project(dut):
     # Key
     await spi_wr_reg(dut, WR_REG0_COMMAND, 0xf23494a4b1f09f721120821ab7ef5039, 1)
     # Nonce
-    #await spi_wr_reg(dut, WR_REG1_COMMAND, 0x0288f6cd3f44a4c2122103181031374d, 1)
     await spi_wr_reg(dut, WR_S_3_COMMAND,  0x0288f6cd3f44a4c2, 1)
     await spi_wr_reg(dut, WR_S_4_COMMAND,  0x122103181031374d, 1)
+    # Plaintext
+    # TODO: Use full 128-bit plaintext, Python reference implementation 
+    #       only uses 40-bit plaintext by default, also hardcoded the padding here
+    await spi_wr_reg(dut, WR_REG1_COMMAND, 0x0000016e6f6373610000000000000000, 1)
     # Associated data
+    # TODO: Use full 128-bit associated data
     await spi_wr_reg(dut, WR_REG2_COMMAND, 0x0000014e4f4353410000000000000000, 1)
 
     await spi_wr_mode(dut, ENCRYPT_MODE, 10)
