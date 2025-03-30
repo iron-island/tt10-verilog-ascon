@@ -183,7 +183,7 @@ module ascon(
                     S_1_load_val = S_1_reg;
                     S_2_load_val = S_2_reg;
                     S_3_load_val = S_3_reg;
-                    S_4_load_val = xor_128b_out;
+                    S_4_load_val = xor_128b_out[63:0];
                 end else if (ascon_counter == 'd9) begin
                     load_val = 1'b1;
 
@@ -200,7 +200,6 @@ module ascon(
                 end else begin
                     rounds_enable = 1'b1;
 
-                    // TODO: check
                     round_ctr = (4'd8 - ascon_counter);
                 end
             end
@@ -230,6 +229,31 @@ module ascon(
                     next_ascon_state = `IDLE_STATE;
 
                     next_ascon_counter = 4'd11;
+
+                    // Update XOR inputs
+                    xor_128b_in0 = {S_3_reg, S_4_reg};
+                    xor_128b_in1 = reg0_128b;
+
+                    // TODO
+                    // Output tag won't be loaded to the state registers,
+                    //   but to an output register
+                end else if (ascon_counter == 4'd13) begin
+                    load_val = 1'b1;
+
+                    // Update XOR inputs
+                    xor_128b_in0 = {S_2_reg, S_3_reg};
+                    xor_128b_in1 = reg0_128b;
+
+                    // Load input values of finalization phase
+                    S_0_load_val = S_0_reg;
+                    S_1_load_val = S_1_reg;
+                    S_2_load_val = xor_128b_out[127:64];
+                    S_3_load_val = xor_128b_out[63:0];
+                    S_4_load_val = S_4_reg;
+                end else begin
+                    rounds_enable = 1'b1;
+
+                    round_ctr = (4'd12 - ascon_counter);
                 end
             end
             `CUSTOM_STATE  : begin
