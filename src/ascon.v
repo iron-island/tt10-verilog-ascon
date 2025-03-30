@@ -225,12 +225,30 @@ module ascon(
                     load_val = 1'b1;
 
                     // Update XOR inputs
+                    // Both encrypt and decrypt mode uses the same XOR inputs
                     xor_128b_in0 = {S_0_reg, S_1_reg};
                     xor_128b_in1 = reg1_128b;
 
                     // Load input values of plaintext processing phase
-                    S_0_load_val = xor_128b_out[127:64];
-                    S_1_load_val = xor_128b_out[63:0];
+                    // TODO: logic with and without padding
+                    case (operation_mode)
+                        `ENCRYPT_MODE : begin
+                            // Load XOR output of state registers and plaintext
+                            S_0_load_val = xor_128b_out[127:64];
+                            S_1_load_val = xor_128b_out[63:0];
+                        end
+                        `DECRYPT_MODE : begin
+                            // Load ciphertext
+                            S_0_load_val = reg1_128b[127:64];
+                            S_1_load_val = reg1_128b[63:0];
+                        end
+                        default : begin
+                            // default case should not be possible, so just
+                            //      retain state register values
+                            S_0_load_val = S_0_reg;
+                            S_1_load_val = S_1_reg;
+                        end
+                    endcase
                     S_2_load_val = S_2_reg;
                     S_3_load_val = S_3_reg;
                     S_4_load_val = S_4_reg;
