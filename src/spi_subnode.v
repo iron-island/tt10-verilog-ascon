@@ -151,7 +151,7 @@ module spi_subnode(
         if (!rst_n) begin
             operation_mode  <= 3'b000;
             operation_ready <= 1'b0;
-        end if (operation_done) begin
+        end else if (operation_done) begin
             operation_ready <= 1'b0;
         end else if (sck_rise) begin
             if (curr_state == `INPUT_MODE_STATE) begin
